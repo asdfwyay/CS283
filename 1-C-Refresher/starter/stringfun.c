@@ -16,7 +16,7 @@ int isspace(int);
 
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
-    bool whitespace = false;
+    int whitespace = 0;
     int user_length = 0;
 
     memset(buff, '.', len*sizeof(char));
@@ -29,11 +29,11 @@ int setup_buff(char *buff, char *user_str, int len){
         
         if (isspace(*cur_user)){
             if (!whitespace) *cur_buf = ' ';
-            whitespace = true;
+            whitespace = 1;
         }
         else{
             *cur_buf = *cur_user;
-            whitespace = false
+            whitespace = 0;
         }
     }
 
@@ -54,10 +54,14 @@ void usage(char *exename){
 
 int count_words(char *buff, int len, int str_len){
     //YOU MUST IMPLEMENT
-    int num_words = 0;
+    int num_words = 1;
+    int c = 0;
 
-    for (char *cur = buff; *cur != '.'; cur++)
-        if (*cur == ' ') num_words++;
+    if (str_len == 0 || (str_len == 1 && *buff == ' '))
+        return 0;
+
+    for (char *cur = buff; c < str_len; cur++, c++)
+        if (*cur == ' ' && (c != 0 && c != str_len-1)) num_words++;
 
     return num_words;
 }
@@ -69,9 +73,9 @@ int isspace(int c){
         c == 0x0c ||
         c == 0x0d ||
         c == 0x20)
-        return c
+        return c;
     
-    return 0
+    return 0;
 }
 
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
