@@ -11,8 +11,11 @@ int  setup_buff(char *, char *, int);
 
 //prototypes for functions to handle required functionality
 int  count_words(char *, int, int);
+void reverse_str(char *, int, int);
+int  word_print(char *, int, int);
+
 //add additional prototypes here
-int isspace(int);
+int  isspace(int);
 
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
@@ -22,13 +25,17 @@ int setup_buff(char *buff, char *user_str, int len){
     memset(buff, '.', len*sizeof(char));
 
     for (char *cur_user = user_str, *cur_buf = buff; *cur_user != '\0'; cur_user++, cur_buf++){
-        if (++user_length > len){
-            printf("The user supplied string is too large");
-            exit(-1);
-        }
+        if (++user_length > len)
+            return -1;
         
         if (isspace(*cur_user)){
-            if (!whitespace) *cur_buf = ' ';
+            if (!whitespace){
+                *cur_buf = ' ';
+            }
+            else{
+                cur_buf--;
+                user_length--;
+            }
             whitespace = 1;
         }
         else{
@@ -57,13 +64,41 @@ int count_words(char *buff, int len, int str_len){
     int num_words = 1;
     int c = 0;
 
-    if (str_len == 0 || (str_len == 1 && *buff == ' '))
+    if (str_len == 0 || len == 0 || (str_len == 1 && *buff == ' '))
         return 0;
 
     for (char *cur = buff; c < str_len; cur++, c++)
         if (*cur == ' ' && (c != 0 && c != str_len-1)) num_words++;
 
     return num_words;
+}
+
+void reverse_str(char *buff, int len, int str_len){
+    // stack (data structure) variables
+    char *base = (char *)malloc(len*sizeof(char));
+    int top = -1;
+    int c = 0;
+
+    // push all characters in buffer to stack
+    for (char *cur = buff; c < str_len; cur++, c++){
+        if (top >= len){
+            printf("error: Stack overflow in reverse string function");
+            exit(3);
+        }
+
+        *(base + ++top) = *cur;
+    }
+
+    // pop all characters from stack back to buffer
+    c = 0;
+    for (char *cur = buff; c < str_len; cur++, c++){
+        if (top < 0){
+            printf("error: Stack underflow in reverse string function");
+            exit(3);
+        }
+
+        *cur = *(base + top--);
+    }
 }
 
 int isspace(int c){
@@ -141,6 +176,7 @@ int main(int argc, char *argv[]){
     // if malloc() failed (buffer was not allocated), exit
     // with status 99
     if (buff == NULL){
+        printf("malloc() failed to allocate buffer");
         exit(99);
     }
 
@@ -162,6 +198,15 @@ int main(int argc, char *argv[]){
 
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
         //       the case statement options
+        case 'r':
+            reverse_str(buff, BUFFER_SZ, user_str_len);
+            printf("Reversed String: ");
+            for (int i = 0; i < user_str_len; i++){
+                putchar(*(buff+i));
+            }
+            putchar('\n');
+            break;
+
         default:
             usage(argv[0]);
             exit(1);
