@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 #define BUFFER_SZ 50
 
 //prototypes
@@ -13,11 +12,32 @@ int  setup_buff(char *, char *, int);
 //prototypes for functions to handle required functionality
 int  count_words(char *, int, int);
 //add additional prototypes here
-
+int isspace(int);
 
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
-    return 0; //for now just so the code compiles. 
+    bool whitespace = false;
+    int user_length = 0;
+
+    memset(buff, '.', len*sizeof(char));
+
+    for (char *cur_user = user_str, *cur_buf = buff; *cur_user != '\0'; cur_user++, cur_buf++){
+        if (++user_length > len){
+            printf("The user supplied string is too large");
+            exit(-1);
+        }
+        
+        if (isspace(*cur_user)){
+            if (!whitespace) *cur_buf = ' ';
+            whitespace = true;
+        }
+        else{
+            *cur_buf = *cur_user;
+            whitespace = false
+        }
+    }
+
+    return user_length; //for now just so the code compiles. 
 }
 
 void print_buff(char *buff, int len){
@@ -30,12 +50,28 @@ void print_buff(char *buff, int len){
 
 void usage(char *exename){
     printf("usage: %s [-h|c|r|w|x] \"string\" [other args]\n", exename);
-
 }
 
 int count_words(char *buff, int len, int str_len){
     //YOU MUST IMPLEMENT
-    return 0;
+    int num_words = 0;
+
+    for (char *cur = buff; *cur != '.'; cur++)
+        if (*cur == ' ') num_words++;
+
+    return num_words;
+}
+
+int isspace(int c){
+    if (c == 0x09 ||
+        c == 0x0a ||
+        c == 0x0b ||
+        c == 0x0c ||
+        c == 0x0d ||
+        c == 0x20)
+        return c
+    
+    return 0
 }
 
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
@@ -48,8 +84,13 @@ int main(int argc, char *argv[]){
     int  rc;                //used for return codes
     int  user_str_len;      //length of user supplied string
 
-    //TODO:  #1. WHY IS THIS SAFE, aka what if arv[1] does not exist?
-    //      PLACE A COMMENT BLOCK HERE EXPLAINING
+    //TODO:  #1. WHY IS THIS SAFE, aka what if argv[1] does not exist?
+    //      In the condition below, the first condition (argc < 2) is
+    //      checked first. If the check succeeds, the second condition
+    //      (*argv[1] != '-') is not executed. Therefore, if
+    //      argv[1] does not exist, then argc < 2 and the condition
+    //      statement passes without needing to check the second
+    //      condition.
     if ((argc < 2) || (*argv[1] != '-')){
         usage(argv[0]);
         exit(1);
@@ -66,7 +107,20 @@ int main(int argc, char *argv[]){
     //WE NOW WILL HANDLE THE REQUIRED OPERATIONS
 
     //TODO:  #2 Document the purpose of the if statement below
-    //      PLACE A COMMENT BLOCK HERE EXPLAINING
+    //      All commands that provide functionality in our
+    //      utility (except -h, which was handed in the
+    //      previous if statement) require the following 3
+    //      arguments:
+    //          1. The name of the tool (stringfun)
+    //          2. The command to execute (e.g. -c)
+    //          3. The sample string (e.g. "hello world")
+    //      
+    //      If the user input contained less than the required
+    //      3 arguments (argc < 3), then the user likely does
+    //      not know how to use the program. Therefore, the
+    //      synopsis is displayed and the program is exited
+    //      with status 1, indicating that there was a command
+    //      line problem.
     if (argc < 3){
         usage(argv[0]);
         exit(1);
@@ -78,7 +132,13 @@ int main(int argc, char *argv[]){
     //          handle error if malloc fails by exiting with a 
     //          return code of 99
     // CODE GOES HERE FOR #3
+    buff = (char *)malloc(BUFFER_SZ*sizeof(char));
 
+    // if malloc() failed (buffer was not allocated), exit
+    // with status 99
+    if (buff == NULL){
+        exit(99);
+    }
 
     user_str_len = setup_buff(buff, input_string, BUFFER_SZ);     //see todos
     if (user_str_len < 0){
