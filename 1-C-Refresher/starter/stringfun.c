@@ -13,7 +13,7 @@ int  setup_buff(char *, char *, int);
 int  count_words(char *, int, int);
 void reverse_str(char *, int, int);
 int  word_print(char *, int, int);
-int  search_replace(char *, char *, char *, int, int)
+int  search_replace(char *, char *, char *, int, int);
 
 //add additional prototypes here
 int  isspace(int);
@@ -80,6 +80,11 @@ void reverse_str(char *buff, int len, int str_len){
     int top = -1;
     int c = 0;
 
+    if (base == NULL){
+        printf("error: could not allocate space for temporary buffer");
+        exit(3);
+    }
+
     // push all characters in buffer to stack
     for (char *cur = buff; c < str_len; cur++, c++){
         if (top >= len){
@@ -100,6 +105,8 @@ void reverse_str(char *buff, int len, int str_len){
 
         *cur = *(base + top--);
     }
+
+    free(base);
 }
 
 int word_print(char *buff, int len, int str_len){
@@ -131,6 +138,58 @@ int word_print(char *buff, int len, int str_len){
     printf(" (%d)\n", length);
 
     return num_words;
+}
+
+int search_replace(char *buff, char *find, char *replace, int len, int str_len){
+    int c = 0;
+    int d = 0;
+
+    int flen = 0;
+    int rlen = 0;
+
+    char *bcur = NULL;
+    char *fcur = NULL;
+    char *word = NULL;
+
+    char *base = (char *)malloc(len*sizeof(char));
+
+    if (base == NULL) {
+        printf("error: could not allocate space for temporary buffer");
+        return -2;
+    }
+
+    // Effectively strlen(find)
+    for (char *f = find; *f++ != '\0'; flen++); 
+
+    // Effectively strlen(replace))
+    for (char *r = replace; *r++ != '\0'; rlen++);
+
+    printf(" \b");
+
+    // Effectively strstr(buff, find)
+    for (char *start = buff; c < str_len; start++, c++){
+        for (bcur = start, fcur = find, d = c; *fcur != '\0' && *bcur == *fcur && d < str_len; bcur++, fcur++, d++);
+
+        if (*fcur == '\0'){
+            word = start;
+            break;
+        }
+    }
+
+    if (word != NULL){
+        if (str_len - flen + rlen > len){
+            printf("error: the buffer is not long enough to search and replace\n");
+            return -3;
+        }
+
+        memcpy(base, buff, c); // copy characters before found word to temp buff
+        memcpy(base + c, replace, rlen); // append replaced word to temp buff
+        memcpy(base + c + rlen, buff + c + flen, len - c - flen); // append remaining characters to temp buff
+        memcpy(buff, base, len); // replace original buffer with temp buff
+    }
+
+    free(base);
+    return 0;
 }
 
 int isspace(int c){
@@ -215,6 +274,7 @@ int main(int argc, char *argv[]){
     user_str_len = setup_buff(buff, input_string, BUFFER_SZ);     //see todos
     if (user_str_len < 0){
         printf("Error setting up buffer, error = %d\n", user_str_len);
+        free(buff);
         exit(2);
     }
 
@@ -223,6 +283,7 @@ int main(int argc, char *argv[]){
             rc = count_words(buff, BUFFER_SZ, user_str_len);  //you need to implement
             if (rc < 0){
                 printf("Error counting words, rc = %d\n", rc);
+                free(buff);
                 exit(2);
             }
             printf("Word Count: %d\n", rc);
@@ -246,18 +307,22 @@ int main(int argc, char *argv[]){
         case 'x':
             if (argc != 5){
                 printf("usage: %s -x \"string\" find replace\n", argv[0]);
+                free(buff);
                 exit(1);
             }
 
-            search_replace(setup_buff, argv[3], argv[4], BUFFER_SZ, user_str_len);
+            search_replace(buff, argv[3], argv[4], BUFFER_SZ, user_str_len);
+            break;
 
         default:
             usage(argv[0]);
+            free(buff);
             exit(1);
     }
 
     //TODO:  #6 Dont forget to free your buffer before exiting
     print_buff(buff,BUFFER_SZ);
+    free(buff);
     exit(0);
 }
 
