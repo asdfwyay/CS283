@@ -18,17 +18,23 @@ int  search_replace(char *, char *, char *, int, int);
 //add additional prototypes here
 int  isspace(int);
 
+// format and add the supplied string to the buffer
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
     int whitespace = 0;
     int user_length = 0;
 
+    // fill buffer with '.' characters
     memset(buff, '.', len*sizeof(char));
 
+    // copy the string into the buffer
     for (char *cur_user = user_str, *cur_buf = buff; *cur_user != '\0'; cur_user++, cur_buf++){
+        // returns -1 if the length of the user supplied string
+        // exceeds the length of the buffer
         if (++user_length > len)
             return -1;
         
+        // remove excess whitespace from string
         if (isspace(*cur_user)){
             if (!whitespace){
                 *cur_buf = ' ';
@@ -45,9 +51,10 @@ int setup_buff(char *buff, char *user_str, int len){
         }
     }
 
-    return user_length; //for now just so the code compiles. 
+    return user_length;
 }
 
+// print the entire buffer
 void print_buff(char *buff, int len){
     printf("Buffer:  ");
     for (int i=0; i<len; i++){
@@ -56,24 +63,29 @@ void print_buff(char *buff, int len){
     putchar('\n');
 }
 
+// displays how to properly use the program
 void usage(char *exename){
     printf("usage: %s [-h|c|r|w|x] \"string\" [other args]\n", exename);
 }
 
+// counts the number of words in the buffer
 int count_words(char *buff, int len, int str_len){
-    //YOU MUST IMPLEMENT
     int num_words = 1;
     int c = 0;
 
+    // If string is empty or contains only whitespace, return 0 words
     if (str_len == 0 || len == 0 || (str_len == 1 && *buff == ' '))
         return 0;
 
+    // count words by counting the number of spaces in the string
+    // (except at beginning or end)
     for (char *cur = buff; c < str_len; cur++, c++)
         if (*cur == ' ' && (c != 0 && c != str_len-1)) num_words++;
 
     return num_words;
 }
 
+// reverses the string (in place) contained in the buffer
 void reverse_str(char *buff, int len, int str_len){
     // stack (data structure) variables
     char *base = (char *)malloc(len*sizeof(char));
@@ -109,27 +121,35 @@ void reverse_str(char *buff, int len, int str_len){
     free(base);
 }
 
+// print all the words contained in the buffer and the length of each word
 int word_print(char *buff, int len, int str_len){
     int num_words = 1;
     int c = 0;
-    int nl = 1;
+    int nl = 1; // semaphore used to determine when to print new word
     int length = 0;
 
     printf("Word Print\n");
     printf("----------\n");
 
+    // If string is empty or contains only whitespace, return 0 words
     if (str_len == 0 || len == 0 || (str_len == 1 && *buff == ' '))
         return 0;
 
+    // go through the string, counting and printing words
     for (char *cur = buff; c < str_len; cur++, c++){
         if (nl) printf("%d. ", num_words);
+
+        // a new word begins when a whitespace is encountered
         nl = (*cur == ' ' && (c != 0 && c != str_len-1));
 
+        // if the end of a word is encountered, print the number of
+        // characters in that word
         if (nl){
             printf(" (%d)\n", length);
             num_words++;
             length = 0;
         }
+        // otherwise, print the character currently being iterated on
         else{
             putchar(*cur);
             length++;
@@ -140,17 +160,22 @@ int word_print(char *buff, int len, int str_len){
     return num_words;
 }
 
+// locate "find" word in string and replace with "replace" word
 int search_replace(char *buff, char *find, char *replace, int len, int str_len){
+    // iterator variables
     int c = 0;
     int d = 0;
 
+    // lengths of find and replace words
     int flen = 0;
     int rlen = 0;
 
+    // pointers for buffer and find words
     char *bcur = NULL;
     char *fcur = NULL;
     char *word = NULL;
 
+    // temporary buffer used when replacing word
     char *base = (char *)malloc(len*sizeof(char));
 
     if (base == NULL) {
@@ -194,6 +219,9 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
     return 0;
 }
 
+//ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
+
+// additional helper function to determine if a character is whitespace
 int isspace(int c){
     if (c == 0x09 ||
         c == 0x0a ||
@@ -205,8 +233,6 @@ int isspace(int c){
     
     return 0;
 }
-
-//ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
 
 int main(int argc, char *argv[]){
 
@@ -334,8 +360,11 @@ int main(int argc, char *argv[]){
 //          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
 //  
-//          Including the buffer length along with the buffer
-//          pointer as arguments to each of the helper
-//          functions is beneficial because it allows those
-//          functions to take in buffers of various sizes as
-//          input.
+//          If we hardcoded the buffer length to 50
+//          bytes, you would need to painstakingly update
+//          each of the helper functions if you wanted to
+//          change that length. Including the buffer length
+//          along with the buffer pointer as arguments to
+//          each of the helper functions is beneficial
+//          because it allows those functions to take in
+//          buffers of various sizes as input. 
