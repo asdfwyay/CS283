@@ -177,6 +177,8 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
     }
 
     if (word != NULL){
+        // Raise buffer overflow error if replacing the total string length after replacement
+        // is longer than the buffer length.
         if (str_len - flen + rlen > len){
             printf("error: the buffer is not long enough to search and replace\n");
             return -3;
@@ -332,4 +334,8 @@ int main(int argc, char *argv[]){
 //          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
 //  
-//          PLACE YOUR ANSWER HERE
+//          Including the buffer length along with the buffer
+//          pointer as arguments to each of the helper
+//          functions is beneficial because it allows those
+//          functions to take in buffers of various sizes as
+//          input.
