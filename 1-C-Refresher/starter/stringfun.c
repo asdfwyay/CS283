@@ -11,7 +11,7 @@ int  setup_buff(char *, char *, int);
 
 //prototypes for functions to handle required functionality
 int  count_words(char *, int, int);
-void reverse_str(char *, int, int);
+int  reverse_str(char *, int, int);
 int  word_print(char *, int, int);
 int  search_replace(char *, char *, char *, int, int);
 
@@ -73,6 +73,9 @@ int count_words(char *buff, int len, int str_len){
     int num_words = 1;
     int c = 0;
 
+    if (str_len > len)
+        return -1;
+
     // If string is empty or contains only whitespace, return 0 words
     if (str_len == 0 || len == 0 || (str_len == 1 && *buff == ' '))
         return 0;
@@ -86,7 +89,7 @@ int count_words(char *buff, int len, int str_len){
 }
 
 // reverses the string (in place) contained in the buffer
-void reverse_str(char *buff, int len, int str_len){
+int reverse_str(char *buff, int len, int str_len){
     // stack (data structure) variables
     char *base = (char *)malloc(len*sizeof(char));
     int top = -1;
@@ -94,14 +97,19 @@ void reverse_str(char *buff, int len, int str_len){
 
     if (base == NULL){
         printf("error: could not allocate space for temporary buffer");
-        exit(3);
+        return -2; // return code for malloc() failed
+    }
+
+    if (str_len > len) {
+        free(base);
+        return -1;
     }
 
     // push all characters in buffer to stack
     for (char *cur = buff; c < str_len; cur++, c++){
         if (top >= len){
             printf("error: Stack overflow in reverse string function\n");
-            exit(3);
+            return -4; // return code for stack overflow
         }
 
         *(base + ++top) = *cur;
@@ -112,13 +120,14 @@ void reverse_str(char *buff, int len, int str_len){
     for (char *cur = buff; c < str_len; cur++, c++){
         if (top < 0){
             printf("error: Stack underflow in reverse string function\n");
-            exit(3);
+            return -5; // return code for stack underflow
         }
 
         *cur = *(base + top--);
     }
 
     free(base);
+    return 0;
 }
 
 // print all the words contained in the buffer and the length of each word
@@ -127,6 +136,9 @@ int word_print(char *buff, int len, int str_len){
     int c = 0;
     int nl = 1; // semaphore used to determine when to print new word
     int length = 0;
+
+    if (str_len > len)
+        return -1;
 
     printf("Word Print\n");
     printf("----------\n");
@@ -180,13 +192,18 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
 
     if (base == NULL) {
         printf("error: could not allocate space for temporary buffer");
-        return -2;
+        return -2; // return code for malloc() failed
+    }
+
+    if (str_len > len) {
+        free(base);
+        return -1;
     }
 
     // Effectively strlen(find)
     for (char *f = find; *f++ != '\0'; flen++); 
 
-    // Effectively strlen(replace))
+    // Effectively strlen(replace)
     for (char *r = replace; *r++ != '\0'; rlen++);
 
     printf(" \b");
@@ -206,7 +223,8 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
         // is longer than the buffer length.
         if (str_len - flen + rlen > len){
             printf("error: the buffer is not long enough to search and replace\n");
-            return -3;
+            free(base);
+            return -3; // return code for when search and replace would extend string beyond buffer length
         }
 
         memcpy(base, buff, c); // copy characters before found word to temp buff
@@ -320,7 +338,13 @@ int main(int argc, char *argv[]){
         //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
         //       the case statement options
         case 'r':
-            reverse_str(buff, BUFFER_SZ, user_str_len);
+            rc = reverse_str(buff, BUFFER_SZ, user_str_len);
+            if (rc < 0){
+                printf("Error reversing string, rc = %d\n", rc);
+                free(buff);
+                exit(2);
+            }
+
             printf("Reversed String: ");
             for (int i = 0; i < user_str_len; i++){
                 putchar(*(buff+i));
@@ -329,7 +353,12 @@ int main(int argc, char *argv[]){
             break;
         
         case 'w':
-            word_print(buff, BUFFER_SZ, user_str_len);
+            rc = word_print(buff, BUFFER_SZ, user_str_len);
+            if (rc < 0) {
+                printf("Error , rc = %d\n", rc);
+                free(buff);
+                exit(3);
+            }
             break;
 
         case 'x':
@@ -339,7 +368,15 @@ int main(int argc, char *argv[]){
                 exit(1);
             }
 
-            search_replace(buff, argv[3], argv[4], BUFFER_SZ, user_str_len);
+            rc = search_replace(buff, argv[3], argv[4], BUFFER_SZ, user_str_len);
+            if (rc < 0) {
+                printf("Error performing search and replace, rc = %d\n", rc);
+                free(buff);
+                if (rc == -2)
+                    exit(2);
+                else
+                    exit(3);
+            }
             break;
 
         default:
