@@ -197,8 +197,12 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
             return -3; // return code for when search and replace would extend string beyond buffer length
         }
 
-        memcpy(buff + c + rlen, buff + c + flen, len - c - flen); // shift characters after found word
-        memcpy(buff + c, replace, rlen); // replace found word with replaced word
+        if (rlen)
+            memcpy(buff + c + rlen, buff + c + flen, len - c - flen); // shift characters after found word
+        else
+            // if replace word is empty, shift function is different to account for additional space
+            memcpy(buff + c + rlen - 1, buff + c + flen, len - c - flen + 1);
+        memcpy(buff + c, replace, rlen);  // replace found word with replaced word
     }
 
     return 0;
