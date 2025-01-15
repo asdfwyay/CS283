@@ -131,13 +131,9 @@ void  word_print(char *str){
     int wlen = 0;       //length of current word
     bool word_start = false;    //am I at the start of a new word
 
-    printf("Word Print\n");
-    printf("----------\n");
-
     // Please implement
-    for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " ")){
+    for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " "))
         printf("%d. %s (%d)\n", ++wc, word, strlen(word));
-    }
 }
 
 
@@ -184,11 +180,13 @@ int main(int argc, char *argv[]){
 
             //TODO: #2. Call count_words, return of the result
             //          should go into the wc variable
+            wc = count_words(input_string);
             printf("Word Count: %d\n", wc);
             break;
         case 'r':
             //TODO: #3. Call reverse string using input_string
             //          input string should be reversed
+            reverse_string(input_string);
             printf("Reversed string: %s\n", input_string);
 
             //TODO:  #4.  The algorithm provided in the directions 
@@ -196,17 +194,28 @@ int main(int argc, char *argv[]){
             //            characters because the string is reversed 
             //            in place.  Briefly explain why the string 
             //            is reversed in place - place in a comment
+            //            
+            //            Operating in place is beneficial since
+            //            not doing so would require an allocation
+            //            for a new string, which would need to be
+            //            freed at a later point.
             break;
         case 'w':
             printf("Word Print\n----------\n");
 
             //TODO: #5. Call word_print, output should be
             //          printed by that function
+            word_print(input_string);
             break;
 
         //TODO: #6. What is the purpose of the default option here?
         //          Please describe replacing this TODO comment with
         //          your thoughts.
+        //          
+        //          If the user passes an argument other than the
+        //          ones specified above, the default branch in the
+        //          switch statement will catch those cases and
+        //          provide an info message.
         default:
             usage(argv[0]);
             printf("Invalid option %c provided, exiting!\n", opt);
@@ -215,4 +224,14 @@ int main(int argc, char *argv[]){
     //TODO: #7. Why did we place a break statement on each case
     //          option, and did not place one on default.  What
     //          would happen if we forgot the break statement?
+    //
+    //          Excluding a break statement on a case results
+    //          in a case fallthrough, where the code in the
+    //          following case is executed. This is not
+    //          intended behavior; therefore, the break
+    //          statements need to be included. The default
+    //          branch does not need a break statement since
+    //          it is the last case in the switch statement
+    //          (additionally, it ends with a call to exit(),
+    //          which will terminate the program anyways).
 }
