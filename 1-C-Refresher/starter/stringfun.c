@@ -166,26 +166,14 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
     char *fcur = NULL;
     char *word = NULL;
 
-    // temporary buffer used when replacing word
-    char *base = (char *)malloc(len*sizeof(char));
-
-    if (base == NULL) {
-        printf("error: could not allocate space for temporary buffer");
-        return -2; // return code for malloc() failed
-    }
-
-    if (str_len > len) {
-        free(base);
+    if (str_len > len)
         return -1;
-    }
 
     // Effectively strlen(find)
     for (char *f = find; *f++ != '\0'; flen++); 
 
     // Effectively strlen(replace)
     for (char *r = replace; *r++ != '\0'; rlen++);
-
-    printf(" \b");
 
     // Effectively strstr(buff, find)
     for (char *start = buff; c < str_len; start++, c++){
@@ -197,22 +185,22 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
         }
     }
 
-    if (word != NULL){
+    if (word == NULL){
+        printf("error: word not found in buffer\n");
+        return -2; // return code for when word is not found in string
+    }
+    else{
         // Raise buffer overflow error if replacing the total string length after replacement
         // is longer than the buffer length.
         if (str_len - flen + rlen > len){
             printf("error: the buffer is not long enough to search and replace\n");
-            free(base);
             return -3; // return code for when search and replace would extend string beyond buffer length
         }
 
-        memcpy(base, buff, c); // copy characters before found word to temp buff
-        memcpy(base + c, replace, rlen); // append replaced word to temp buff
-        memcpy(base + c + rlen, buff + c + flen, len - c - flen); // append remaining characters to temp buff
-        memcpy(buff, base, len); // replace original buffer with temp buff
+        memcpy(buff + c + rlen, buff + c + flen, len - c - flen); // shift characters after found word
+        memcpy(buff + c, replace, rlen); // replace found word with replaced word
     }
 
-    free(base);
     return 0;
 }
 
@@ -351,10 +339,7 @@ int main(int argc, char *argv[]){
             if (rc < 0) {
                 printf("Error performing search and replace, rc = %d\n", rc);
                 free(buff);
-                if (rc == -2)
-                    exit(2);
-                else
-                    exit(3);
+                exit(3);
             }
             break;
 
