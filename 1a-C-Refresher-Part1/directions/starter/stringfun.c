@@ -26,24 +26,7 @@ void usage(char *exename){
     printf("\texample: %s -w \"hello class\" \n", exename);
 }
 
-//count_words algorithm
-//  1.  create a boolean to indicate if you are at the start of a word
-//      initialize to false
-//  2.  Loop over the length of the string
-//      2a.  Get the current character aka str[i]
-//      2b.  Is word_start state false?
-//           -  Is the current character a SPACE_CHAR?
-//              * if YES, continue loop (a.k.a) goto top with "continue;"
-//              * if NO, we are at the start of a new word
-//                > increment wc
-//                > set word_start to true
-//      2c. Else, word_start is true
-//          - Is the current character a SPACE_CHAR?
-//            * if YES we just ended a word, set word_start to false
-//            * if NO, its just a character in the current word so
-//                     there is nothing more to do
-//  3.  The current word count for the input string is in the wc variable
-//      so just 'return wc;' 
+// counts the number of words in a string
 int count_words(char *str){
     int wc = 0;
 
@@ -84,31 +67,8 @@ void  reverse_string(char *str){
     return;
 }
 
-//word_print() - algorithm
-//
-// Start by copying the code from count words.  Recall that that code counts
-// individual words by incrementing wc when it encounters the first character 
-// in a word.
-// Now, at this point where we are incrementing wc we need to do a few more things
-//      1. incrment wc, and set word_start to true like before
-//      2. Now, set wlen to zero, as we will be counting characters in each word
-//      3. Since we are starting a new word we can printf("%d. ", wc);
-//
-// If word_start is true, we are in an active word, so each time through the loop
-// we would want to:
-//      1. Check if the current character is not a SPACE_CHARACTER
-//         a.  IF it is NOT A SPACE -> print the current character, increment wlen
-//
-//      2.  In the loop there are 2 conditions that indicate a current word is ending:
-//          a. word_start is false and the current character is a SPACE_CHARACTER
-//                  OR
-//          b. the current loop index is the last character in the string (aka the
-//             loop index is last_char_idx) 
-//
-//          IF either of these conditions are true:
-//              * Print the word length for current word - printf(" (%d)\n", wlen);
-//              * Set word_start to false
-//              * Set wlen to 0 given we are starting a new word
+//word_print()
+// counts the number of words and characters in each word and prints them out
 //
 // EXAMPLE OUTPUT
 // ==============
@@ -122,7 +82,6 @@ void  reverse_string(char *str){
 void  word_print(char *str){
     int wc = 0;         //counts words
 
-    // Please implement
     for (char *word = strtok(str, " "); word != NULL; word = strtok(NULL, " "))
         printf("%d. %s (%lu)\n", ++wc, word, strlen(word));
 }
