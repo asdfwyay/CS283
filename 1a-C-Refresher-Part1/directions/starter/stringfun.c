@@ -45,11 +45,9 @@ void usage(char *exename){
 //  3.  The current word count for the input string is in the wc variable
 //      so just 'return wc;' 
 int count_words(char *str){
-    // Suggested local variables
     int wc = 0;
 
-    // Please implement
-    for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " ")) wc++;
+    for (char *word = strtok(str, " "); word != NULL; word = strtok(NULL, " ")) wc++;
 
     return wc;
 }
@@ -70,14 +68,12 @@ int count_words(char *str){
 //
 //  3. When the loop above terminates, the string should be reversed in place
 void  reverse_string(char *str){
-    // Suggested local variables
-    int end_idx;        //should be length of string - 1
-    int start_idx;
+    int end_idx = strlen(str) - 1;        //should be length of string - 1
+    int start_idx = 0;
     char tmp_char;
 
-    // Please implement
     while (end_idx > start_idx){
-        tmp_char = end_idx;
+        tmp_char = str[end_idx];
         str[end_idx] = str[start_idx];
         str[start_idx] = tmp_char;
 
@@ -124,16 +120,11 @@ void  reverse_string(char *str){
 // 3. is (2)
 // 4. fun (3)
 void  word_print(char *str){
-    //suggested local variables
-    int len;            //length of string - aka strlen(str);
-    int last_char_idx;  //index of last char - strlen(str)-1;
     int wc = 0;         //counts words
-    int wlen = 0;       //length of current word
-    bool word_start = false;    //am I at the start of a new word
 
     // Please implement
-    for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " "))
-        printf("%d. %s (%d)\n", ++wc, word, strlen(word));
+    for (char *word = strtok(str, " "); word != NULL; word = strtok(NULL, " "))
+        printf("%d. %s (%lu)\n", ++wc, word, strlen(word));
 }
 
 
