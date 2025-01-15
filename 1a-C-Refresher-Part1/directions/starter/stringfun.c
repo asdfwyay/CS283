@@ -10,6 +10,11 @@
 
 // TODO: #1 What is the purpose of providing prototypes for
 //          the functions in this code module
+//
+//       The purpose of including the following function
+//       prototypes is to inform the compiler about the
+//       functions utilized in the program, their return
+//       types, and info about their parameters.
 void  usage(char *);
 int   count_words(char *);
 void  reverse_string(char *);
@@ -41,12 +46,11 @@ void usage(char *exename){
 //      so just 'return wc;' 
 int count_words(char *str){
     // Suggested local variables
-    int len;
-    int wc;
-    bool word_start;
+    int wc = 0;
 
     // Please implement
-    return 0;
+    for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " ")) wc++;
+    return wc;
 }
 
 //reverse_string() algorithm
