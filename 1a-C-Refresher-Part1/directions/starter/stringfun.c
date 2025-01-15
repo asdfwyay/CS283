@@ -50,6 +50,7 @@ int count_words(char *str){
 
     // Please implement
     for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " ")) wc++;
+
     return wc;
 }
 
@@ -75,6 +76,14 @@ void  reverse_string(char *str){
     char tmp_char;
 
     // Please implement
+    while (end_idx > start_idx){
+        tmp_char = end_idx;
+        str[end_idx] = str[start_idx];
+        str[start_idx] = tmp_char;
+
+        start_idx++;
+        end_idx--;
+    }
 
     return;
 }
