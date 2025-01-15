@@ -131,7 +131,13 @@ void  word_print(char *str){
     int wlen = 0;       //length of current word
     bool word_start = false;    //am I at the start of a new word
 
+    printf("Word Print\n");
+    printf("----------\n");
+
     // Please implement
+    for (char *word = strtok(str, " "); word != NULL; word = strtok(word, " ")){
+        printf("%d. %s (%d)\n", ++wc, word, strlen(word));
+    }
 }
 
 
