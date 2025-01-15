@@ -90,43 +90,22 @@ int count_words(char *buff, int len, int str_len){
 
 // reverses the string (in place) contained in the buffer
 int reverse_str(char *buff, int len, int str_len){
-    // stack (data structure) variables
-    char *base = (char *)malloc(len*sizeof(char));
-    int top = -1;
-    int c = 0;
+    int end_idx = str_len - 1;        //should be length of string - 1
+    int start_idx = 0;
+    char tmp_char;
 
-    if (base == NULL){
-        printf("error: could not allocate space for temporary buffer");
-        return -2; // return code for malloc() failed
-    }
-
-    if (str_len > len) {
-        free(base);
+    if (str_len > len)
         return -1;
+
+    while (end_idx > start_idx){
+        tmp_char = *(buff + end_idx);
+        *(buff + end_idx) = *(buff + start_idx);
+        *(buff + start_idx) = tmp_char;
+
+        start_idx++;
+        end_idx--;
     }
 
-    // push all characters in buffer to stack
-    for (char *cur = buff; c < str_len; cur++, c++){
-        if (top >= len){
-            printf("error: Stack overflow in reverse string function\n");
-            return -4; // return code for stack overflow
-        }
-
-        *(base + ++top) = *cur;
-    }
-
-    // pop all characters from stack back to buffer
-    c = 0;
-    for (char *cur = buff; c < str_len; cur++, c++){
-        if (top < 0){
-            printf("error: Stack underflow in reverse string function\n");
-            return -5; // return code for stack underflow
-        }
-
-        *cur = *(base + top--);
-    }
-
-    free(base);
     return 0;
 }
 
