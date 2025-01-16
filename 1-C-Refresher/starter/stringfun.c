@@ -144,7 +144,7 @@ int word_print(char *buff, int len, int str_len){
         // if the end of a word is encountered, print the number of
         // characters in that word
         if (nl){
-            printf(" (%d)\n", length);
+            printf("(%d)\n", length);
             num_words++;
             length = 0;
         }
@@ -154,7 +154,8 @@ int word_print(char *buff, int len, int str_len){
             length++;
         }
     }
-    printf(" (%d)\n", length);
+    printf("(%d)\n", length);
+    printf("\nNumber of words returned: %d\n", num_words);
 
     return num_words;
 }
@@ -217,6 +218,10 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
 
         memcpy(buff + c + rlen, buff + c + flen, len - c - flen); // shift characters after found word
         memcpy(buff + c, replace, rlen);  // replace found word with replaced word
+
+        // add trailing periods to buffer (only necessary if string length is smaller)
+        for (int end_idx = str_len - flen + rlen; end_idx < len; end_idx++)
+            *(buff + end_idx) = '.';
     }
 
     return 0;
@@ -330,11 +335,11 @@ int main(int argc, char *argv[]){
                 exit(2);
             }
 
-            printf("Reversed String: ");
-            for (int i = 0; i < user_str_len; i++){
-                putchar(*(buff+i));
-            }
-            putchar('\n');
+            //printf("Reversed String: ");
+            //for (int i = 0; i < user_str_len; i++){
+            //    putchar(*(buff+i));
+            //}
+            //putchar('\n');
             break;
         
         case 'w':
