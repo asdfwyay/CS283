@@ -178,8 +178,7 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
     // Effectively strlen(replace)
     for (char *r = replace; *r++ != '\0'; rlen++);
 
-    // Effectively strstr(buff, find)
-
+    // Effectively strstr(buff, find) but only checking after whitespace characters (and at beginning of string)
     for (char *start = buff; c < str_len; start++, c++){
         if (sw){
             for (bcur = start, fcur = find, d = c; *fcur != '\0' && *bcur == *fcur && d < str_len; bcur++, fcur++, d++);
