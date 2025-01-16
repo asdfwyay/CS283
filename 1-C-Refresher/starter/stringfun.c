@@ -21,7 +21,7 @@ int  isspace(int);
 // format and add the supplied string to the buffer
 int setup_buff(char *buff, char *user_str, int len){
     //TODO: #4:  Implement the setup buff as per the directions
-    int whitespace = 0;
+    int whitespace = 1;
     int user_length = 0;
 
     // fill buffer with '.' characters
@@ -40,7 +40,8 @@ int setup_buff(char *buff, char *user_str, int len){
                 *cur_buf = ' ';
             }
             else{
-                cur_buf--;
+                // undo previous length and buffer pointer increments when removing whitespace
+                cur_buf--; 
                 user_length--;
             }
             whitespace = 1;
@@ -49,6 +50,12 @@ int setup_buff(char *buff, char *user_str, int len){
             *cur_buf = *cur_user;
             whitespace = 0;
         }
+    }
+
+    // remove excess whitespace at the end of the string
+    for (char *end_buf = buff + user_length - 1; isspace(*end_buf); end_buf--){
+        *end_buf = '.';
+        user_length--;
     }
 
     return user_length;
