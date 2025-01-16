@@ -157,6 +157,9 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
     int c = 0;
     int d = 0;
 
+    // boolean for start of word
+    int sw = 1;
+
     // lengths of find and replace words
     int flen = 0;
     int rlen = 0;
@@ -170,19 +173,27 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
         return -1;
 
     // Effectively strlen(find)
-    for (char *f = find; *f++ != '\0'; flen++); 
+    for (char *f = find; *f++ != '\0'; flen++);
 
     // Effectively strlen(replace)
     for (char *r = replace; *r++ != '\0'; rlen++);
 
     // Effectively strstr(buff, find)
-    for (char *start = buff; c < str_len; start++, c++){
-        for (bcur = start, fcur = find, d = c; *fcur != '\0' && *bcur == *fcur && d < str_len; bcur++, fcur++, d++);
 
-        if (*fcur == '\0'){
-            word = start;
-            break;
+    for (char *start = buff; c < str_len; start++, c++){
+        if (sw){
+            for (bcur = start, fcur = find, d = c; *fcur != '\0' && *bcur == *fcur && d < str_len; bcur++, fcur++, d++);
+
+            if (*fcur == '\0'){
+                word = start;
+                break;
+            }
+
+            sw = 0;
         }
+
+        if (*start == ' ')
+            sw = 1;
     }
 
     if (word == NULL){
@@ -197,11 +208,7 @@ int search_replace(char *buff, char *find, char *replace, int len, int str_len){
             return -3; // return code for when search and replace would extend string beyond buffer length
         }
 
-        if (rlen)
-            memcpy(buff + c + rlen, buff + c + flen, len - c - flen); // shift characters after found word
-        else
-            // if replace word is empty, shift function is different to account for additional space
-            memcpy(buff + c + rlen - 1, buff + c + flen, len - c - flen + 1);
+        memcpy(buff + c + rlen, buff + c + flen, len - c - flen); // shift characters after found word
         memcpy(buff + c, replace, rlen);  // replace found word with replaced word
     }
 
