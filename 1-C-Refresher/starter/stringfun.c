@@ -56,10 +56,11 @@ int setup_buff(char *buff, char *user_str, int len){
 
 // print the entire buffer
 void print_buff(char *buff, int len){
-    printf("Buffer:  ");
+    printf("Buffer:  [");
     for (int i=0; i<len; i++){
         putchar(*(buff+i));
     }
+    putchar(']');
     putchar('\n');
 }
 
