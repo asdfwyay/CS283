@@ -237,6 +237,7 @@ int del_student(int fd, int id){
 /*
  *  count_db_records
  *      fd:     linux file descriptor
+ *      should_print_count:     indicates if the function should print the count
  * 
  *  Counts the number of records in the database.  Start by reading the 
  *  database at the beginning, and continue reading individual records
@@ -258,7 +259,7 @@ int del_student(int fd, int id){
  *            M_ERR_DB_WRITE   error writing to db file (adding student)
  *            
  */
-int count_db_records(int fd){
+int count_db_records(int fd, bool should_print_count){
     int nbytes;
     int count = 0;
     char buf[64];
@@ -283,10 +284,11 @@ int count_db_records(int fd){
     }
 
     // print appropriate status msg and return count
-    if (count > 0)
-        printf(M_DB_RECORD_CNT, count);
-    else
+    if (count > 0) {
+        if (should_print_count) printf(M_DB_RECORD_CNT, count);
+    } else {
         printf(M_DB_EMPTY);
+    }
     return count;
 }
 
@@ -324,8 +326,62 @@ int count_db_records(int fd){
  *            
  */
 int print_db(int fd){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    int nbytes;
+    int id = 0;
+    student_t student = {0};
+
+    char buf[64];
+    char buf_zeros[64];
+
+    double calculated_gpa_from_student;
+
+    // finish creating 64 byte buffer with all zeros
+    memset(buf_zeros, 0, 64);
+
+    // check if db is empty
+    if (count_db_records(fd, false) == 0)
+        return NO_ERROR;
+
+    // move fd back to beginning of file
+    lseek(fd, 0, SEEK_SET);
+
+    // print output header
+    printf(STUDENT_PRINT_HDR_STRING, "ID", 
+                "FIRST NAME", "LAST_NAME", "GPA");
+
+    // raise error if file does not exist
+    if (fd == -1)
+        return ERR_DB_FILE;
+
+    // read all entries in db
+    while ((nbytes = read(fd, buf, 64))) {
+        // check if read operation produced an error
+        if (nbytes == -1) {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        // print student data if it exists
+        if (memcmp(buf, buf_zeros, 64)) {
+            // check if student exists in database
+            switch (get_student(fd, id, &student)) {
+                case ERR_DB_FILE:
+                    printf(M_ERR_DB_READ);
+                    return ERR_DB_FILE;
+                case SRCH_NOT_FOUND:
+                    break;
+                case NO_ERROR:
+                default:
+                    calculated_gpa_from_student = (double)student.gpa / 100;
+                    printf(STUDENT_PRINT_FMT_STRING, student.id, student.fname,
+                        student.lname, calculated_gpa_from_student);
+            }
+        }
+
+        id++;
+    }
+
+    return NO_ERROR;
 }
 
 /*
@@ -357,7 +413,20 @@ int print_db(int fd){
  *            
  */
 void print_student(student_t *s){
-    printf(M_NOT_IMPL);
+    double calculated_gpa_from_s;
+
+    if (s == NULL || s->id == 0) {
+        printf(M_ERR_STD_PRINT);
+        return;
+    }
+
+    printf(STUDENT_PRINT_HDR_STRING, "ID", 
+                "FIRST NAME", "LAST_NAME", "GPA");
+
+    calculated_gpa_from_s = (double)s->gpa / 100;
+
+    printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname,
+                        s->lname, calculated_gpa_from_s);
 }
 
 /*
@@ -542,7 +611,7 @@ int main(int argc, char *argv[]){
             //prog_name     -c 
             //-----------------
             //example:  prog_name -c  
-            rc = count_db_records(fd);
+            rc = count_db_records(fd, true);
             if (rc < 0)
                 exit_code = EXIT_FAIL_DB;
             break;

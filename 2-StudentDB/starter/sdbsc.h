@@ -10,7 +10,7 @@ int del_student(int fd, int id);
 int compress_db(int fd);
 void print_student(student_t *s);
 int validate_range(int id, int gpa);
-int count_db_records(int fd);
+int count_db_records(int fd, bool should_print_count);
 int print_db(int fd);
 void usage(char *);
 
