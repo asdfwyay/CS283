@@ -323,12 +323,8 @@ int print_db(int fd){
     student_t student = {0};
 
     char buf[64];
-    char buf_zeros[64];
 
     double calculated_gpa_from_student;
-
-    // finish creating 64 byte buffer with all zeros
-    memset(buf_zeros, 0, 64);
 
     // check if db is empty
     if (count_db_records(fd, false) == 0)
@@ -354,7 +350,7 @@ int print_db(int fd){
         }
 
         // print student data if it exists
-        if (memcmp(buf, buf_zeros, 64)) {
+        if (memcmp(buf, &EMPTY_STUDENT_RECORD, 64)) {
             // check if student exists in database
             switch (get_student(fd, id, &student)) {
                 case ERR_DB_FILE:
@@ -470,7 +466,77 @@ void print_student(student_t *s){
  *            
  */
 int compress_db(int fd){
-    printf(M_NOT_IMPL);
+    int nbytes;
+    int temp_fd;
+    char buf[64];
+
+    // raise error if file does not exist
+    if (fd == -1)
+        return ERR_DB_FILE;
+
+    temp_fd = open_db(TMP_DB_FILE, false);
+
+    if (temp_fd == -1) {
+        printf(M_ERR_DB_OPEN);
+        return ERR_DB_FILE;
+    }
+
+    // create the compressed file
+    while ((nbytes = read(fd, buf, 64))) {
+        // check if read operation produced an error
+        if (nbytes == -1) {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        // write data to temp file if data exists
+        if (memcmp(buf, &EMPTY_STUDENT_RECORD, 64)) {
+            if (write(temp_fd, buf, 64) == -1) {
+                printf(M_ERR_DB_WRITE);
+                return ERR_DB_FILE;
+            }
+        }
+    }
+
+    // zero out db
+    close(fd);
+    fd = open_db(DB_FILE, true);
+    if (fd == -1) {
+        printf(M_ERR_DB_CREATE);
+        return ERR_DB_FILE;
+    }
+
+    // go back to beginning of temp db file
+    lseek(temp_fd, 0, SEEK_SET);
+
+    // copy the contents from the compressed file back to the db
+    while ((nbytes = read(temp_fd, buf, 64))) {
+        // check if read operation produced an error
+        if (nbytes == -1) {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        // write data to db
+        if (write(fd, buf, 64) == -1) {
+            printf(M_ERR_DB_WRITE);
+            return ERR_DB_FILE;
+        }
+    }
+
+    // zero out and temp db
+    close(temp_fd);
+    temp_fd = open_db(TMP_DB_FILE, true);
+    if (temp_fd == -1) {
+        printf(M_ERR_DB_CREATE);
+        return ERR_DB_FILE;
+    }
+    close(temp_fd);
+
+    // go back to beginning of db file
+    lseek(fd, 0, SEEK_SET);
+
+    printf(M_DB_COMPRESSED_OK);
     return fd;
 }
 
