@@ -197,10 +197,6 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
  */
 int del_student(int fd, int id){
     student_t s_tmp = {0};
-    char buf[64];
-
-    // set buf to all zeros
-    memset(buf, 0, 64);
 
     // raise error if file does not exist
     if (fd == -1)
@@ -225,7 +221,7 @@ int del_student(int fd, int id){
     }
 
     // write zeros to student info in db
-    if (write(fd, buf, 64) == -1) {
+    if (write(fd, &EMPTY_STUDENT_RECORD, 64) == -1) {
         printf(M_ERR_DB_WRITE);
         return ERR_DB_FILE;
     }
@@ -263,10 +259,6 @@ int count_db_records(int fd, bool should_print_count){
     int nbytes;
     int count = 0;
     char buf[64];
-    char buf_zeros[64];
-
-    // finish creating 64 byte buffer with all zeros
-    memset(buf_zeros, 0, 64);
 
     // raise error if file does not exist
     if (fd == -1)
@@ -280,7 +272,7 @@ int count_db_records(int fd, bool should_print_count){
         }
 
         // increment count if data read is nonzero
-        if (memcmp(buf, buf_zeros, 64)) count++;
+        if (memcmp(buf, &EMPTY_STUDENT_RECORD, 64)) count++;
     }
 
     // print appropriate status msg and return count
