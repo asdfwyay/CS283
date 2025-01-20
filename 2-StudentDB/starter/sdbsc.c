@@ -202,6 +202,10 @@ int del_student(int fd, int id){
     // set buf to all zeros
     memset(buf, 0, 64);
 
+    // raise error if file does not exist
+    if (fd == -1)
+        return ERR_DB_FILE;
+
     // check if student exists in database
     switch (get_student(fd, id, &s_tmp)) {
         case ERR_DB_FILE:
@@ -255,8 +259,35 @@ int del_student(int fd, int id){
  *            
  */
 int count_db_records(int fd){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    int nbytes;
+    int count = 0;
+    char buf[64];
+    char buf_zeros[64];
+
+    // finish creating 64 byte buffer with all zeros
+    memset(buf_zeros, 0, 64);
+
+    // raise error if file does not exist
+    if (fd == -1)
+        return ERR_DB_FILE;
+
+    while ((nbytes = read(fd, buf, 64))) {
+        // check if read operation produced an error
+        if (nbytes == -1) {
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        }
+
+        // increment count if data read is nonzero
+        if (memcmp(buf, buf_zeros, 64)) count++;
+    }
+
+    // print appropriate status msg and return count
+    if (count > 0)
+        printf(M_DB_RECORD_CNT, count);
+    else
+        printf(M_DB_EMPTY);
+    return count;
 }
 
 /*
