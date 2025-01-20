@@ -68,7 +68,7 @@ int get_student(int fd, int id, student_t *s){
         return ERR_DB_FILE;
 
     // read student id from file
-    if (read(fd, s->id, sizeof(int)) == -1)
+    if (read(fd, &s->id, sizeof(int)) == -1)
         return ERR_DB_FILE;
     
     // check if student data is present
@@ -84,7 +84,7 @@ int get_student(int fd, int id, student_t *s){
         return ERR_DB_FILE;
 
     // read student gpa from file
-    if (read(fd, s->gpa, sizeof(int)) == -1)
+    if (read(fd, &s->gpa, sizeof(int)) == -1)
         return ERR_DB_FILE;
 
     return NO_ERROR;
@@ -116,6 +116,8 @@ int get_student(int fd, int id, student_t *s){
  *            
  */
 int add_student(int fd, int id, char *fname, char *lname, int gpa){
+    int existing_id;
+
     // raise error if file does not exist
     if (fd == -1) {
         printf(M_ERR_DB_READ);
@@ -129,14 +131,14 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
     }
 
     // read student id from file
-    if (read(fd, s->id, sizeof(int)) == -1) {
+    if (read(fd, &existing_id, sizeof(int)) == -1) {
         printf(M_ERR_DB_READ);
         return ERR_DB_FILE;
     }
     
     // check if student data is present
-    if (s->id != 0) {
-        printf(M_ERR_DB_ADD_DUP);
+    if (existing_id == id) {
+        printf(M_ERR_DB_ADD_DUP, id);
         return ERR_DB_OP;
     }
 
@@ -144,7 +146,7 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
     lseek(fd, id*sizeof(student_t), SEEK_SET);
 
     // write student id to file
-    if (write(fd, id, sizeof(int)) == -1) {
+    if (write(fd, &id, sizeof(int)) == -1) {
         printf(M_ERR_DB_WRITE);
         return ERR_DB_FILE;
     }
@@ -162,12 +164,12 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
     }
 
     // write student gpa to file
-    if (write(fd, gpa, sizeof(int)) == -1) {
+    if (write(fd, &gpa, sizeof(int)) == -1) {
         printf(M_ERR_DB_WRITE);
         return ERR_DB_FILE;
     }
 
-    printf(M_STD_ADDED);    
+    printf(M_STD_ADDED, id);    
     return NO_ERROR;
 }
 
