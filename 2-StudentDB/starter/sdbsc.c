@@ -196,8 +196,38 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa){
  *            
  */
 int del_student(int fd, int id){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    student_t s_tmp = {0};
+    char buf[64];
+
+    // set buf to all zeros
+    memset(buf, 0, 64);
+
+    // check if student exists in database
+    switch (get_student(fd, id, &s_tmp)) {
+        case ERR_DB_FILE:
+            printf(M_ERR_DB_READ);
+            return ERR_DB_FILE;
+        case SRCH_NOT_FOUND:
+            printf(M_STD_NOT_FND_MSG, id);
+            return ERR_DB_OP;
+        case NO_ERROR:
+        default:
+    }
+
+    // move file descriptor to beginning of student info in db
+    if (lseek(fd, id*sizeof(student_t), SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    // write zeros to student info in db
+    if (write(fd, buf, 64) == -1) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_STD_DEL_MSG, id);
+    return NO_ERROR;
 }
 
 /*
