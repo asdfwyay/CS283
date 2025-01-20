@@ -59,7 +59,35 @@ int open_db(char *dbFile, bool should_truncate){
  *  console:  Does not produce any console I/O used by other functions
  */
 int get_student(int fd, int id, student_t *s){
-    return NOT_IMPLEMENTED_YET;
+    // raise error if file does not exist
+    if (fd == -1)
+        return ERR_DB_FILE;
+
+    // move file descriptor to beginning of student info in db
+    if (lseek(fd, id*sizeof(student_t), SEEK_SET) == -1)
+        return ERR_DB_FILE;
+
+    // read student id from file
+    if (read(fd, s->id, sizeof(int)) == -1)
+        return ERR_DB_FILE;
+    
+    // check if student data is present
+    if (s->id == 0)
+        return SRCH_NOT_FOUND;
+
+    // read student first name from file
+    if (read(fd, s->fname, 24*sizeof(char)) == -1)
+        return ERR_DB_FILE;
+
+    // read student last name from file
+    if (read(fd, s->lname, 32*sizeof(char)) == -1)
+        return ERR_DB_FILE;
+
+    // read student gpa from file
+    if (read(fd, s->gpa, sizeof(int)) == -1)
+        return ERR_DB_FILE;
+
+    return NO_ERROR;
 }
 
 /*
@@ -88,8 +116,59 @@ int get_student(int fd, int id, student_t *s){
  *            
  */
 int add_student(int fd, int id, char *fname, char *lname, int gpa){
-    printf(M_NOT_IMPL);
-    return NOT_IMPLEMENTED_YET;
+    // raise error if file does not exist
+    if (fd == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    // move file descriptor to beginning of student info in db
+    if (lseek(fd, id*sizeof(student_t), SEEK_SET) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+
+    // read student id from file
+    if (read(fd, s->id, sizeof(int)) == -1) {
+        printf(M_ERR_DB_READ);
+        return ERR_DB_FILE;
+    }
+    
+    // check if student data is present
+    if (s->id != 0) {
+        printf(M_ERR_DB_ADD_DUP);
+        return ERR_DB_OP;
+    }
+
+    // move file descriptor back to beginning of student info
+    lseek(fd, id*sizeof(student_t), SEEK_SET);
+
+    // write student id to file
+    if (write(fd, id, sizeof(int)) == -1) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    // write student first name to file
+    if (write(fd, fname, 24*sizeof(char)) == -1) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    // write student last name to file
+    if (write(fd, lname, 32*sizeof(char)) == -1) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    // write student gpa to file
+    if (write(fd, gpa, sizeof(int)) == -1) {
+        printf(M_ERR_DB_WRITE);
+        return ERR_DB_FILE;
+    }
+
+    printf(M_STD_ADDED);    
+    return NO_ERROR;
 }
 
 /*
