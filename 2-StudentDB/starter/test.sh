@@ -81,7 +81,7 @@ setup_file() {
     }
 }
 
-#@test "Make sure the file storage is correct at this time" {
+# @test "Make sure the file storage is correct at this time" {
 #    run du -h ./student.db
 #   [ "$status" -eq 0 ]
 #    #note du -h puts a tab between the 2 fields need to match on that
@@ -90,7 +90,7 @@ setup_file() {
 #        echo "12K     ./student.db"
 #        return 1
 #    }
-#}
+# }
 
 @test "Find student 3 in db" {
     run ./sdbsc -f 3
@@ -178,7 +178,7 @@ setup_file() {
 #if you implemented the compress db function remove the 
 #skip from the tests below
 
-#@test "Double check storage at this point" {
+# @test "Double check storage at this point" {
 #    run du -h ./student.db
 #    [ "$status" -eq 0 ]
 #    #note du -h puts a tab between the 2 fields need to match on that
@@ -187,7 +187,7 @@ setup_file() {
 #        echo "12K     ./student.db"
 #        return 1
 #    }
-#}
+# }
 
 @test "Compress db - try 1" {
     run ./sdbsc -x

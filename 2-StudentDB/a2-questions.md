@@ -44,7 +44,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     Can you think of any reason why the above implementation would be a **very bad idea** using the C programming language?  Specifically, address why the above code introduces a subtle bug that could be hard to identify at runtime? 
 
-    > **ANSWER:** After returning, the `student` variable is freed since it is a local variable stored on the stack (rather than the heap using `malloc()`). Therefore, the pointer returned will point to data that does not exist anymore, which is undefined behavior.
+    > **ANSWER:** After returning, the `student` variable is freed since it is a local variable stored on the stack (rather than the heap using `malloc()`). Therefore, the pointer returned will point to data that does not exist anymore, which results in undefined behavior.
 
 3. Another way the `get_student(...)` function could be implemented is as follows:
 
@@ -77,7 +77,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     In this implementation the storage for the student record is allocated on the heap using `malloc()` and passed back to the caller when the function returns. What do you think about this alternative implementation of `get_student(...)`?  Address in your answer why it work work, but also think about any potential problems it could cause.  
     
-    > **ANSWER:** Unlike in the previous example, the data stored in the `pstudent` buffer will persist after returning from the function as it is allocated on the heap. However, the main disadvantage of this implementation is that a new data buffer is allocated instead of using an existing data buffer when passing by reference, reducing memory efficiency. Furthermore, the buffer will need to be freed at a later point, as failing to free the buffer could introduce a memory leak if the function is called repeatedly.
+    > **ANSWER:** Unlike in the previous example, the data stored in the `pstudent` buffer will persist after returning from the function as it is allocated on the heap. However, the main disadvantage of this implementation is that a new data buffer is allocated instead of using an existing data buffer when passing by reference, reducing memory efficiency. Furthermore, the buffer will need to be freed at a later point, as failing to free the buffer would introduce a memory leak, especially if the function is called repeatedly.
 
 
 4. Lets take a look at how storage is managed for our simple database. Recall that all student records are stored on disk using the layout of the `student_t` structure (which has a size of 64 bytes).  Lets start with a fresh database by deleting the `student.db` file using the command `rm ./student.db`.  Now that we have an empty database lets add a few students and see what is happening under the covers.  Consider the following sequence of commands:

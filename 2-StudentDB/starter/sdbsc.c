@@ -495,6 +495,9 @@ int compress_db(int fd){
                 printf(M_ERR_DB_WRITE);
                 return ERR_DB_FILE;
             }
+        } else {
+            if (lseek(temp_fd, sizeof(student_t), SEEK_CUR) == -1)
+                return ERR_DB_FILE;
         }
     }
 
@@ -518,9 +521,14 @@ int compress_db(int fd){
         }
 
         // write data to db
-        if (write(fd, buf, 64) == -1) {
-            printf(M_ERR_DB_WRITE);
-            return ERR_DB_FILE;
+        if (memcmp(buf, &EMPTY_STUDENT_RECORD, 64)) {
+            if (write(fd, buf, 64) == -1) {
+                printf(M_ERR_DB_WRITE);
+                return ERR_DB_FILE;
+            }
+        } else {
+            if (lseek(fd, sizeof(student_t), SEEK_CUR) == -1)
+                return ERR_DB_FILE;
         }
     }
 
