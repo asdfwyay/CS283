@@ -1,8 +1,8 @@
 1. In this assignment I suggested you use `fgets()` to get user input in the main while loop. Why is `fgets()` a good choice for this application?
 
-    > **Answer**:  _start here_
+    > **Answer**:  `fgets()` reads and stores a specified number of characters from a file stream. Since we need to obtain user input, we need to read from STDIN (which is itself a file), so `fgets()` would be applicable here.
 
-2. You needed to use `malloc()` to allocte memory for `cmd_buff` in `dsh_cli.c`. Can you explain why you needed to do that, instead of allocating a fixed-size array?
+2. You needed to use `malloc()` to allocate memory for `cmd_buff` in `dsh_cli.c`. Can you explain why you needed to do that, instead of allocating a fixed-size array?
 
     > **Answer**:  _start here_
 

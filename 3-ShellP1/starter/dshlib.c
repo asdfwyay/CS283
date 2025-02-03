@@ -44,7 +44,12 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
     char *pch;
     char *token = strtok(cmd_line, PIPE_STRING);
     char *argv = (char *)malloc(SH_CMD_MAX*sizeof(char));
+    char *argv_start = argv;
     int ncmds = 0;
+
+    if (argv == NULL) {
+        return ERR_CMD_OR_ARGS_TOO_BIG;
+    }
 
     clist->num = 0;
 
@@ -55,35 +60,44 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         pch = strchr(argv, SPACE_CHAR);
 
         if (pch == NULL) {
-            if (strlen(argv) > EXE_MAX)
+            if (strlen(argv) > EXE_MAX) {
+                free(argv_start);
                 return ERR_CMD_OR_ARGS_TOO_BIG;
+            }
 
             strcpy(cmd.exe, argv);
             memset(cmd.args, '\0', ARG_MAX);
         } else {
-            if (pch - argv + 1 > EXE_MAX)
+            if (pch - argv + 1 > EXE_MAX) {
+                free(argv_start);
                 return ERR_CMD_OR_ARGS_TOO_BIG;
-            if (strlen(pch + 1) > ARG_MAX)
+            }
+            if (strlen(pch + 1) > ARG_MAX) {
+                free(argv_start);
                 return ERR_CMD_OR_ARGS_TOO_BIG;
+            }
 
             strncpy(cmd.exe, argv, pch - argv);
             strcpy(cmd.args, pch + 1);
         }
 
-        if (ncmds + 1 > CMD_MAX)
+        if (ncmds + 1 > CMD_MAX) {
+            free(argv_start);
             return ERR_TOO_MANY_COMMANDS;
+        }
         memcpy(&clist->commands[ncmds++], &cmd, sizeof(cmd));
 
         token = strtok(NULL, PIPE_STRING);
     }
 
     clist->num = ncmds;
+    free(argv_start);
     return OK;
 }
 
 char *strip(char *str)
 {
-    char *end = strchr(str, '\0');
+    char *end = strchr(str, '\0') - 1;
 
     while (end >= str && *end == SPACE_CHAR) {
         end--;

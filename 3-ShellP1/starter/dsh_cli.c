@@ -46,7 +46,8 @@
  */
 int main()
 {
-    char *cmd_buff = (char *)malloc(ARG_MAX*sizeof(char));
+    //char *cmd_buff = (char *)malloc(ARG_MAX*sizeof(char));
+    char cmd_buff[ARG_MAX];
     int rc = 0;
     command_list_t clist;
 
@@ -62,7 +63,6 @@ int main()
         if (strcmp(cmd_buff, "") == 0) {
             printf(CMD_WARN_NO_CMD);
         } else if (strcmp(cmd_buff, EXIT_CMD) == 0) {
-            free(cmd_buff);
             exit(OK);
         } else {
             rc = build_cmd_list(cmd_buff, &clist);
@@ -73,7 +73,7 @@ int main()
                     for (int i = 0; i < clist.num; i++) {
                         printf("<%d> %s", i + 1, clist.commands[i].exe);
                         if (strcmp(clist.commands[i].args, "")) {
-                            printf("[%s]", clist.commands[i].args);
+                            printf(" [%s]", clist.commands[i].args);
                         }
                         printf("\n");
                     }
