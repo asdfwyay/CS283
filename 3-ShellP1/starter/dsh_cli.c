@@ -62,6 +62,7 @@ int main()
         if (strcmp(cmd_buff, "") == 0) {
             printf(CMD_WARN_NO_CMD);
         } else if (strcmp(cmd_buff, EXIT_CMD) == 0) {
+            free(cmd_buff);
             exit(OK);
         } else {
             rc = build_cmd_list(cmd_buff, &clist);
