@@ -5,6 +5,9 @@
 
 #include "dshlib.h"
 
+int build_cmd_list(char *cmd_line, command_list_t *clist);
+char *strip(char *str);
+
 /*
  *  build_cmd_list
  *    cmd_line:     the command line from the user
@@ -34,6 +37,62 @@
  */
 int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
-    printf(M_NOT_IMPL);
-    return EXIT_NOT_IMPL;
+    command_t cmd = {
+        .exe = "",
+        .args = ""
+    };
+    char *pch;
+    char *token = strtok(cmd_line, PIPE_STRING);
+    char *argv = (char *)malloc(SH_CMD_MAX*sizeof(char));
+    int ncmds = 0;
+
+    clist->num = 0;
+
+    while (token != NULL) {
+        strcpy(argv, token);
+        argv = strip(argv);
+
+        pch = strchr(argv, SPACE_CHAR);
+
+        if (pch == NULL) {
+            if (strlen(argv) > EXE_MAX)
+                return ERR_CMD_OR_ARGS_TOO_BIG;
+
+            strcpy(cmd.exe, argv);
+            memset(cmd.args, '\0', ARG_MAX);
+        } else {
+            if (pch - argv + 1 > EXE_MAX)
+                return ERR_CMD_OR_ARGS_TOO_BIG;
+            if (strlen(pch + 1) > ARG_MAX)
+                return ERR_CMD_OR_ARGS_TOO_BIG;
+
+            strncpy(cmd.exe, argv, pch - argv);
+            strcpy(cmd.args, pch + 1);
+        }
+
+        if (ncmds + 1 > CMD_MAX)
+            return ERR_TOO_MANY_COMMANDS;
+        memcpy(&clist->commands[ncmds++], &cmd, sizeof(cmd));
+
+        token = strtok(NULL, PIPE_STRING);
+    }
+
+    clist->num = ncmds;
+    return OK;
+}
+
+char *strip(char *str)
+{
+    char *end = strchr(str, '\0');
+
+    while (end >= str && *end == SPACE_CHAR) {
+        end--;
+    }
+    *(end + 1) = '\0';
+
+    while (*str == SPACE_CHAR) {
+        str++;
+    }
+
+    return str;
 }
