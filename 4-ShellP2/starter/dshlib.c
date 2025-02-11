@@ -57,8 +57,28 @@ int exec_local_cmd_loop()
     int rc = 0;
     cmd_buff_t cmd;
 
-    // TODO IMPLEMENT MAIN LOOP
+    // allocate command buffer structure
+    if ((rc = alloc_cmd_buff(&cmd)) < 0)
+        return rc;
 
+    // allocate space for command buffer
+    cmd_buff = (char *)malloc(SH_CMD_MAX*sizeof(char));
+    if (cmd_buff == NULL) {
+        return ERR_MEMORY;
+    }
+
+    while (1) {
+        printf("%s", SH_PROMPT);
+
+        // read line into cmd_buff
+        if (fgets(cmd_buff, SH_CMD_MAX, stdin) == NULL) {
+            printf("\n");
+            break;
+        }
+        cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
+
+        build_cmd_buff(cmd_buff, &cmd);
+    }
     // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
 
     // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
@@ -66,6 +86,128 @@ int exec_local_cmd_loop()
 
     // TODO IMPLEMENT if not built-in command, fork/exec as an external command
     // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
+
+    return OK;
+}
+
+char *fmt_cmd(char *str)
+{
+    char *end = strchr(str, '\0') - 1;
+    char *c;
+    char *d;
+    bool is_space = false;
+    bool in_quotes = false; 
+
+    // remove trailing spaces
+    while (end >= str && *end == SPACE_CHAR) {
+        end--;
+    }
+    *(end + 1) = '\0';
+
+    // remove leading spaces
+    while (*str == SPACE_CHAR) {
+        str++;
+    }
+
+    // remove duplicate spaces (excluding inside quotes)
+    c = str;
+    d = str;
+    while (*c != '\0') {
+        switch (*c) {
+            case QUOTE_CHAR:
+                in_quotes = !in_quotes;
+                is_space = false;
+                *d++ = *c++;
+                break;
+            case SPACE_CHAR:
+                if (is_space && !in_quotes) {
+                    c++;
+                } else {
+                    is_space = true;
+                    *d++ = *c++;
+                }
+                break;   
+            default:
+                is_space = false;
+                *d++ = *c++;
+                break;
+        }
+    }
+    *d = '\0';
+
+    return str;
+}
+
+int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
+    // allocate command buffer structure
+    cmd_buff = (cmd_buff_t *)malloc(sizeof(cmd_buff_t));
+
+    // allocate command buffer inside structure
+    cmd_buff->_cmd_buffer = (char *)malloc(SH_CMD_MAX*sizeof(char));
+    if (cmd_buff->_cmd_buffer == NULL) {
+        return ERR_MEMORY;
+    }
+
+    return OK;
+}
+
+int free_cmd_buff(cmd_buff_t *cmd_buff) {
+    clear_cmd_buff(cmd_buff);
+    free(cmd_buff->_cmd_buffer);
+    free(cmd_buff);
+
+    return OK;
+}
+
+int clear_cmd_buff(cmd_buff_t *cmd_buff) {
+    for (int i = 0; i < cmd_buff->argc; i++)
+        free(cmd_buff->argv[i]);
+    cmd_buff->argc = 0;
+
+    return OK;
+}
+
+int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
+    long argv_pos[CMD_ARGV_MAX + 1];
+    int argc;
+    size_t argv_size;
+    bool in_quotes;
+
+    // format command
+    cmd_line = fmt_cmd(cmd_line);
+
+    // extract indices of arguments from command line string
+    argv_pos[0] = 0;
+    argc = 1;
+    in_quotes = false;
+    for (char *cur = cmd_line; *cur != '\0'; cur++) {
+        switch (*cur) {
+            case QUOTE_CHAR:
+                in_quotes = !in_quotes;
+                break;
+            case SPACE_CHAR:
+                if (!in_quotes) {
+                    if (argc >= CMD_ARGV_MAX)
+                        return ERR_CMD_OR_ARGS_TOO_BIG;
+                    argv_pos[argc++] = cur - cmd_line + 1;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    argv_pos[argc] = strlen(cmd_line);
+
+    // allocate argv and populate with arguments
+    for (int i = 0; i < argc; i++) {
+        argv_size = argv_pos[i+1] - argv_pos[i] + 1;
+        cmd_buff->argv[i] = (char *)malloc(argv_size*sizeof(char));
+
+        memset(cmd_buff->argv[i], '\0', argv_size);
+        strncpy(cmd_buff->argv[i], cmd_line + argv_pos[i], argv_size - 1);
+
+        printf("%d. %s\n", i, cmd_buff->argv[i]);
+    }
 
     return OK;
 }

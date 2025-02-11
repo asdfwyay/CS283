@@ -30,6 +30,7 @@ typedef struct command{
 
 //Special character #defines
 #define SPACE_CHAR  ' '
+#define QUOTE_CHAR  '"'
 #define PIPE_CHAR   '|'
 #define PIPE_STRING "|"
 
@@ -51,6 +52,8 @@ int alloc_cmd_buff(cmd_buff_t *cmd_buff);
 int free_cmd_buff(cmd_buff_t *cmd_buff);
 int clear_cmd_buff(cmd_buff_t *cmd_buff);
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff);
+
+char *fmt_cmd(char *str);
 
 //built in command stuff
 typedef enum {
