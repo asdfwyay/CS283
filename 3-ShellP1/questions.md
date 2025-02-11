@@ -6,7 +6,7 @@
 
 2. You needed to use `malloc()` to allocate memory for `cmd_buff` in `dsh_cli.c`. Can you explain why you needed to do that, instead of allocating a fixed-size array?
 
-    > **Answer**:  _start here_
+    > **Answer**: It is not necessary for this first part of the shell assignment to allocate `cmd_buff` on the heap instead of the stack. However, allocating on the heap will prove useful in the future when we implement redirection into our shell (e.g. here-documents will have variable sizes, so dynamic allocaiton will be much more memory efficient). 
 
 
 3. In `dshlib.c`, the function `build_cmd_list()` must trim leading and trailing spaces from each command before storing it. Why is this necessary? If we didn't trim spaces, what kind of issues might arise when executing commands in our shell?
@@ -63,4 +63,6 @@
 
 - How should our custom shell handle errors from commands that fail? Consider cases where a command outputs both STDOUT and STDERR. Should we provide a way to merge them, and if so, how?
 
-    > **Answer**:  _start here_
+    > **Answer**: By default, all error messages should be output to STDERR whereas other outputs should be output to STDOUT. However, if the user wants to merge STDOUT and STDERR, we should provide that functionality using the merge operator `>&`.
+    >
+    > Example: `dragon > dragon.txt 2>&1` runs the `dragon` command and outputs it to the `dragon.txt` while also redirecting any output meant for STDERR to STDOUT.
