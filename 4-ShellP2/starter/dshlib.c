@@ -77,9 +77,22 @@ int exec_local_cmd_loop()
         }
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 
-        build_cmd_buff(cmd_buff, &cmd);
+        // format command
+        cmd_buff = fmt_cmd(cmd_buff);
+
+        // check if there are commands in user input
+        if (cmd_buff[0] == '\0') {
+            printf(CMD_WARN_NO_CMD);
+            return WARN_NO_CMDS;
+        }
+
+        // build command buffer
+        if ((rc = build_cmd_buff(cmd_buff, &cmd)) < 0)
+            return rc;
+
+        if (exec_built_in_cmd(&cmd) == BI_RC)
+            return OK_EXIT;
     }
-    // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
 
     // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
     // the cd command should chdir to the provided directory; if no directory is provided, do nothing
@@ -168,16 +181,13 @@ int clear_cmd_buff(cmd_buff_t *cmd_buff) {
 }
 
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
-    long argv_pos[CMD_ARGV_MAX + 1];
+    long argv_pos[CMD_ARGV_MAX];
     int argc;
     size_t argv_size;
     bool in_quotes;
 
-    // format command
-    cmd_line = fmt_cmd(cmd_line);
-
     // extract indices of arguments from command line string
-    argv_pos[0] = 0;
+    argv_pos[0] = -1;
     argc = 1;
     in_quotes = false;
     for (char *cur = cmd_line; *cur != '\0'; cur++) {
@@ -187,9 +197,9 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
                 break;
             case SPACE_CHAR:
                 if (!in_quotes) {
-                    if (argc >= CMD_ARGV_MAX)
+                    if (argc >= CMD_MAX)
                         return ERR_CMD_OR_ARGS_TOO_BIG;
-                    argv_pos[argc++] = cur - cmd_line + 1;
+                    argv_pos[argc++] = cur - cmd_line;
                 }
                 break;
             default:
@@ -200,13 +210,79 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 
     // allocate argv and populate with arguments
     for (int i = 0; i < argc; i++) {
-        argv_size = argv_pos[i+1] - argv_pos[i] + 1;
-        cmd_buff->argv[i] = (char *)malloc(argv_size*sizeof(char));
+        // calculate buffer size
+        argv_size = argv_pos[i+1] - argv_pos[i];
 
-        memset(cmd_buff->argv[i], '\0', argv_size);
-        strncpy(cmd_buff->argv[i], cmd_line + argv_pos[i], argv_size - 1);
+        // allocate and zero argv buffer
+        cmd_buff->argv[i] = (char *)calloc(argv_size,sizeof(char));
+        if (cmd_buff->argv[i] == NULL)
+            return ERR_MEMORY;
 
-        printf("%d. %s\n", i, cmd_buff->argv[i]);
+        // copy string to argv (without quotes)
+        if (*(cmd_line + argv_pos[i] + 1) == '"' && argv_size > 3)
+            strncpy(cmd_buff->argv[i], cmd_line + argv_pos[i] + 2, argv_size - 3);
+        else
+            strncpy(cmd_buff->argv[i], cmd_line + argv_pos[i] + 1, argv_size - 1);
+    }
+    cmd_buff->argv[argc] = NULL;
+
+    // set argc
+    cmd_buff->argc = argc;
+
+    return OK;
+}
+
+Built_In_Cmds match_command(const char *input) {
+    if (!strcmp(input, EXIT_CMD))
+        return BI_CMD_EXIT;
+    if (!strcmp(input, "dragon"))
+        return BI_CMD_DRAGON;
+    if (!strcmp(input, "cd"))
+        return BI_CMD_CD;
+    return BI_NOT_BI;
+}
+
+Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
+    Built_In_Cmds cmd_enum = match_command(cmd->argv[0]);
+
+    switch (cmd_enum) {
+        case BI_CMD_EXIT:
+            return BI_RC;
+        case BI_CMD_CD:
+            if (cmd->argc >= 2) {
+                chdir(cmd->argv[1]);
+            }
+            return BI_EXECUTED;
+        default:
+            exec_cmd(cmd);
+            return BI_EXECUTED;
+    }
+}
+
+int exec_cmd(cmd_buff_t *cmd) {
+    int pid;
+    int crc;
+
+    pid = fork();
+    if (pid < 0) {
+        return ERR_EXEC_CMD;
+    }
+
+    if (pid == 0) {
+        int rc;
+        //printf("[c] Executing %s\n", cmd->argv[0]);
+
+        rc = execvp(cmd->argv[0], cmd->argv);
+        if (rc < 0) {
+            exit(ERR_EXEC_CMD);
+        }
+    } else {
+        //printf("[p] Parent process id is %d\n", getpid());
+        //printf("[p] Child process id is %d\n", pid);
+        //printf("[p] Waiting for child to finish...\n\n");
+        wait(&crc);
+
+        //printf("[p] The child exit status is %d\n", WEXITSTATUS(crc));
     }
 
     return OK;
