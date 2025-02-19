@@ -12,3 +12,8 @@ EOF
     # Assertions
     [ "$status" -eq 0 ]
 }
+
+@test "" {
+    run ./dsh <<EOF
+
+}

@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include "dshlib.h"
+#include "dragon.h"
 
 /*
  * Implement your exec_local_cmd_loop function by building a loop that prompts the 
@@ -90,6 +91,7 @@ int exec_local_cmd_loop()
         if ((rc = build_cmd_buff(cmd_buff, &cmd)) < 0)
             return rc;
 
+        // exit shell if exit command was executed
         if (exec_built_in_cmd(&cmd) == BI_RC)
             return OK_EXIT;
     }
@@ -165,6 +167,7 @@ int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
 }
 
 int free_cmd_buff(cmd_buff_t *cmd_buff) {
+    // free all malloced arrays within command buffer structure
     clear_cmd_buff(cmd_buff);
     free(cmd_buff->_cmd_buffer);
     free(cmd_buff);
@@ -173,6 +176,7 @@ int free_cmd_buff(cmd_buff_t *cmd_buff) {
 }
 
 int clear_cmd_buff(cmd_buff_t *cmd_buff) {
+    // free all malloced string arrays in cmd_buff->argv 
     for (int i = 0; i < cmd_buff->argc; i++)
         free(cmd_buff->argv[i]);
     cmd_buff->argc = 0;
@@ -252,6 +256,9 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
             if (cmd->argc >= 2) {
                 chdir(cmd->argv[1]);
             }
+            return BI_EXECUTED;
+        case BI_CMD_DRAGON:
+            print_dragon();
             return BI_EXECUTED;
         default:
             exec_cmd(cmd);
