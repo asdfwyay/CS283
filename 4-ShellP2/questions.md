@@ -32,7 +32,7 @@
 
 - What is the purpose of signals in a Linux system, and how do they differ from other forms of interprocess communication (IPC)?
 
-    > **Answer**:  _start here_
+    > **Answer**:  Signals are a form of Interprocess Communication (IPC) which essentially acts as software interrupts, meaning that when a process receives a signal, it must decide how to handle the signal before continuing execution.
 
 - Find and describe three commonly used signals (e.g., SIGKILL, SIGTERM, SIGINT). What are their typical use cases?
 
