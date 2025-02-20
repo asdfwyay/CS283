@@ -28,7 +28,7 @@
 
     > **Answer**:  The parsing logic described above did not change much functionally. However, the new parsing logic utilizes the `cmd_buff_t` structure for better organization.
 
-8. For this quesiton, you need to do some research on Linux signals. You can use [this google search](https://www.google.com/search?q=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&oq=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBzc2MGowajeoAgCwAgA&sourceid=chrome&ie=UTF-8) to get started.
+8. For this question, you need to do some research on Linux signals. You can use [this google search](https://www.google.com/search?q=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&oq=Linux+signals+overview+site%3Aman7.org+OR+site%3Alinux.die.net+OR+site%3Atldp.org&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBzc2MGowajeoAgCwAgA&sourceid=chrome&ie=UTF-8) to get started.
 
 - What is the purpose of signals in a Linux system, and how do they differ from other forms of interprocess communication (IPC)?
 
@@ -36,8 +36,14 @@
 
 - Find and describe three commonly used signals (e.g., SIGKILL, SIGTERM, SIGINT). What are their typical use cases?
 
-    > **Answer**:  _start here_
+    > **Answer**:
+    >
+    > *SIGTERM*: A signal which requests a process to terminate. This is generally the preferred method for stopping a process as it allows the process to perform necessary shutdown operations (e.g. saving data to a file) before termination.
+    >
+    > *SIGKILL*: A signal which is handled by the kernel and immediately terminates a process. This is typically used as a backup to *SIGTERM* as the process being terminated cannot ignore or handle *SIGKILL*. Therefore, it cannot perform clean-up/shutdown operations during termination.
+    >
+    > *SIGINT*: A signal that is typically user-generated (Ctrl+C) and, by default, terminates the foreground process. *SIGINT* does not necessarily 
 
 - What happens when a process receives SIGSTOP? Can it be caught or ignored like SIGINT? Why or why not?
 
-    > **Answer**:  _start here_
+    > **Answer**: *SIGSTOP* halts a process. Like *SIGKILL*, it is handled by the kernel and cannot be caught or ignored. The process will resume once it receives the *SIGCONT* signal.

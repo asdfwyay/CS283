@@ -6,8 +6,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <errno.h>
 #include "dshlib.h"
 #include "dragon.h"
+
+int grc = 0;
 
 /*
  * Implement your exec_local_cmd_loop function by building a loop that prompts the 
@@ -84,7 +87,7 @@ int exec_local_cmd_loop()
         // check if there are commands in user input
         if (cmd_buff[0] == '\0') {
             printf(CMD_WARN_NO_CMD);
-            return WARN_NO_CMDS;
+            continue;
         }
 
         // build command buffer
@@ -95,12 +98,6 @@ int exec_local_cmd_loop()
         if (exec_built_in_cmd(&cmd) == BI_RC)
             return OK_EXIT;
     }
-
-    // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
-    // the cd command should chdir to the provided directory; if no directory is provided, do nothing
-
-    // TODO IMPLEMENT if not built-in command, fork/exec as an external command
-    // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
 
     return OK;
 }
@@ -243,6 +240,8 @@ Built_In_Cmds match_command(const char *input) {
         return BI_CMD_DRAGON;
     if (!strcmp(input, "cd"))
         return BI_CMD_CD;
+    if (!strcmp(input, "rc"))
+        return BI_CMD_RC;
     return BI_NOT_BI;
 }
 
@@ -260,8 +259,21 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
         case BI_CMD_DRAGON:
             print_dragon();
             return BI_EXECUTED;
+        case BI_CMD_RC:
+            printf("%d\n", grc);
+            return BI_EXECUTED;
         default:
-            exec_cmd(cmd);
+            grc = exec_cmd(cmd);
+            switch (grc) {
+                case ENOENT:
+                    printf("Command not found in PATH\n");
+                    break;
+                case EACCES:
+                    printf("Permission denied\n");
+                    printf("%d\n",grc);
+                    break;
+                default:
+            }
             return BI_EXECUTED;
     }
 }
@@ -277,19 +289,14 @@ int exec_cmd(cmd_buff_t *cmd) {
 
     if (pid == 0) {
         int rc;
-        //printf("[c] Executing %s\n", cmd->argv[0]);
-
         rc = execvp(cmd->argv[0], cmd->argv);
         if (rc < 0) {
-            exit(ERR_EXEC_CMD);
+            exit(errno);
         }
     } else {
-        //printf("[p] Parent process id is %d\n", getpid());
-        //printf("[p] Child process id is %d\n", pid);
-        //printf("[p] Waiting for child to finish...\n\n");
         wait(&crc);
-
-        //printf("[p] The child exit status is %d\n", WEXITSTATUS(crc));
+        if (WEXITSTATUS(crc) != 0)
+            return WEXITSTATUS(crc);
     }
 
     return OK;
