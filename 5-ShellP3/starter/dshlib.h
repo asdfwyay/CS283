@@ -40,6 +40,7 @@ typedef struct command_list{
 
 //Special character #defines
 #define SPACE_CHAR  ' '
+#define QUOTE_CHAR  '"'
 #define PIPE_CHAR   '|'
 #define PIPE_STRING "|"
 
@@ -66,13 +67,17 @@ int close_cmd_buff(cmd_buff_t *cmd_buff);
 int build_cmd_list(char *cmd_line, command_list_t *clist);
 int free_cmd_list(command_list_t *cmd_lst);
 
+char *fmt_cmd(char *str);
+
 //built in command stuff
 typedef enum {
     BI_CMD_EXIT,
     BI_CMD_DRAGON,
     BI_CMD_CD,
+    BI_CMD_RC,
     BI_NOT_BI,
     BI_EXECUTED,
+    BI_RC
 } Built_In_Cmds;
 Built_In_Cmds match_command(const char *input); 
 Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd);
