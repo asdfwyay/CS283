@@ -245,14 +245,24 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
         return ERR_TOO_MANY_COMMANDS;
     }
 
+    // add commands to command list
     cmds = 0;
     while (tok != NULL) {
         alloc_cmd_buff(&clist->commands[cmds]);
         build_cmd_buff(tok,&clist->commands[cmds]);
 
+        cmds++;
         tok = strtok(NULL, PIPE_STRING);
     }
+    clist->num = cmds;
 
+    return OK;
+}
+
+int free_cmd_list(command_list_t *cmd_lst) {
+    for (int i = 0; i < cmd_lst->num; i++)
+        free_cmd_buff(&cmd_lst->commands[i]);
+    cmd_lst->num = 0;
     return OK;
 }
 
