@@ -59,15 +59,20 @@ int exec_local_cmd_loop()
 {
     char *cmd_buff;
     int rc = 0;
-    cmd_buff_t cmd;
+    command_list_t cmds;
 
-    // allocate command buffer structure
-    if ((rc = alloc_cmd_buff(&cmd)) < 0)
-        return rc;
+    char *cmd;
+    char *tok;
+    int stridx = 0;
 
     // allocate space for command buffer
     cmd_buff = (char *)malloc(SH_CMD_MAX*sizeof(char));
     if (cmd_buff == NULL) {
+        return ERR_MEMORY;
+    }
+
+    cmd = (char *)malloc(SH_CMD_MAX*sizeof(char));
+    if (cmd == NULL) {
         return ERR_MEMORY;
     }
 
@@ -82,7 +87,25 @@ int exec_local_cmd_loop()
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 
         // format command
-        cmd_buff = fmt_cmd(cmd_buff);
+        tok = strtok(cmd_buff, PIPE_STRING);
+        stridx = 0;
+        while (tok != NULL) {
+            // format token
+            strcpy(cmd,tok);
+            cmd = fmt_cmd(cmd);
+
+            // add token to command buffer
+            strcpy(cmd_buff + stridx,cmd);
+
+            // add pipe character and update string pointer
+            *(cmd_buff + stridx + strlen(cmd)) = PIPE_CHAR;
+            stridx += strlen(cmd) + 1;
+
+            // move to next token
+            tok = strtok(NULL, PIPE_STRING);
+        }
+        *(cmd_buff + stridx) = '\0';
+        //printf("%s\n",cmd_buff);
 
         // check if there are commands in user input
         if (cmd_buff[0] == '\0') {
@@ -90,13 +113,17 @@ int exec_local_cmd_loop()
             continue;
         }
 
-        // build command buffer
-        if ((rc = build_cmd_buff(cmd_buff, &cmd)) < 0)
+        // build command list
+        if ((rc = build_cmd_list(cmd_buff, &cmds)) < 0)
             return rc;
 
         // exit shell if exit command was executed
-        if (exec_built_in_cmd(&cmd) == BI_RC)
+        if ((grc = execute_pipeline(&cmds)) == OK_EXIT) {
+            free_cmd_list(&cmds);
+            free(cmd_buff);
+            free(cmd);
             return OK_EXIT;
+        }
     }
 
     return OK;
@@ -251,6 +278,9 @@ int build_cmd_list(char *cmd_line, command_list_t *clist) {
         alloc_cmd_buff(&clist->commands[cmds]);
         build_cmd_buff(tok,&clist->commands[cmds]);
 
+        //for (int j = 0; j < clist->commands[cmds].argc; j++)
+        //    printf("argv[%d]: %s\n", j, clist->commands[cmds].argv[j]);
+
         cmds++;
         tok = strtok(NULL, PIPE_STRING);
     }
@@ -278,36 +308,37 @@ Built_In_Cmds match_command(const char *input) {
     return BI_NOT_BI;
 }
 
-Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd) {
+int exec_built_in_cmd(cmd_buff_t *cmd) {
     Built_In_Cmds cmd_enum = match_command(cmd->argv[0]);
+    int rc;
 
     switch (cmd_enum) {
         case BI_CMD_EXIT:
-            return BI_RC;
+            return OK_EXIT;
         case BI_CMD_CD:
             if (cmd->argc >= 2) {
                 chdir(cmd->argv[1]);
             }
-            return BI_EXECUTED;
+            return OK;
         case BI_CMD_DRAGON:
             print_dragon();
-            return BI_EXECUTED;
+            return OK;
         case BI_CMD_RC:
             printf("%d\n", grc);
-            return BI_EXECUTED;
+            return OK;
         default:
-            grc = exec_cmd(cmd);
-            switch (grc) {
+            rc = execvp(cmd->argv[0], cmd->argv);
+            switch (rc) {
                 case ENOENT:
                     printf("Command not found in PATH\n");
                     break;
                 case EACCES:
                     printf("Permission denied\n");
-                    printf("%d\n",grc);
+                    printf("%d\n",rc);
                     break;
                 default:
             }
-            return BI_EXECUTED;
+            return rc;
     }
 }
 
@@ -346,6 +377,10 @@ int execute_pipeline(command_list_t *clist) {
         int fds[2];
         pids[i] = fork();
 
+        if (pids[i] < 0) {
+            return ERR_EXEC_CMD;
+        }
+
         pipe(fds);
 
         if (pids[i] == 0) {
@@ -355,7 +390,7 @@ int execute_pipeline(command_list_t *clist) {
             close(fds[0]);
             close(fds[1]);
 
-            rc = execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            rc = exec_built_in_cmd(&clist->commands[i]);
             if (rc < 0) {
                 exit(errno);
             }

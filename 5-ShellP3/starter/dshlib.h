@@ -1,7 +1,6 @@
 #ifndef __DSHLIB_H__
     #define __DSHLIB_H__
 
-
 //Constants for command structure sizes
 #define EXE_MAX 64
 #define ARG_MAX 256
@@ -80,7 +79,7 @@ typedef enum {
     BI_RC
 } Built_In_Cmds;
 Built_In_Cmds match_command(const char *input); 
-Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd);
+int exec_built_in_cmd(cmd_buff_t *cmd);
 
 //main execution context
 int exec_local_cmd_loop();
