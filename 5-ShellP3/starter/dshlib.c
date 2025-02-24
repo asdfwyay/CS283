@@ -334,3 +334,41 @@ int exec_cmd(cmd_buff_t *cmd) {
 
     return OK;
 }
+
+int execute_pipeline(command_list_t *clist) {
+    pid_t *pids = (pid_t *)malloc(clist->num*sizeof(pid_t));
+    int crc;
+
+    if (!pids)
+        return ERR_MEMORY;
+
+    for (int i = 0; i < clist->num; i++) {
+        int fds[2];
+        pids[i] = fork();
+
+        pipe(fds);
+
+        if (pids[i] == 0) {
+            int rc;
+
+            dup2(fds[0], STDIN_FILENO);
+            close(fds[0]);
+            close(fds[1]);
+
+            rc = execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+            if (rc < 0) {
+                exit(errno);
+            }
+        } else {
+            dup2(STDOUT_FILENO, fds[1]);
+            close(fds[0]);
+            close(fds[1]);
+
+            waitpid(pids[i], &crc, 0);
+            if (WEXITSTATUS(crc) != 0)
+                return WEXITSTATUS(crc);
+        }
+    }
+
+    return OK;
+}
