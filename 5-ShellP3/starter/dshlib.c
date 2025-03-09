@@ -380,47 +380,6 @@ int execute_pipeline(command_list_t *clist) {
     pids[0] = fork();
     crc = exec_pipe(clist, fds, pids, 0);
 
-    /*
-    // execute each command in pipeline
-    for (int i = 0; i < clist->num; i++) {
-        // fork process
-        pids[i] = fork();
-        if (pids[i] < 0) {
-            return ERR_EXEC_CMD;
-        }
-
-        if (pids[i] == 0) {
-            int rc;
-
-            // duplicate file descriptors
-            if (i > 0)
-                dup2(fds[2*(i-1)], STDIN_FILENO);
-            if (i < clist->num-1)
-                dup2(fds[2*i+1], STDOUT_FILENO);
-
-            // close all file descriptors
-            for (int j = 0; j < 2*clist->num; j++)
-                close(fds[j]);
-
-            // execute command
-            rc = exec_built_in_cmd(&clist->commands[i]);
-            if (rc == OK_EXIT)
-                exit(rc);
-            if (rc < 0)
-                exit(errno);
-        }
-    }
-
-    // parent process closes all fds
-    for (int j = 0; j < 2*clist->num; j++)
-        close(fds[j]);
-
-    // obtain status from last process in pipeline
-    waitpid(pids[clist->num-1], &crc, 0);
-    if (WEXITSTATUS(crc) != 0)
-        return WEXITSTATUS(crc);
-    */
-
     return crc;
 }
 
