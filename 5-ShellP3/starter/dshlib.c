@@ -117,14 +117,8 @@ int exec_local_cmd_loop()
             return rc;
 
         // exit shell if exit command was executed
-        if ((grc = execute_pipeline(&cmds)) == OK_EXIT) {
-            free_cmd_list(&cmds);
-            free(cmd_buff);
-            free(cmd);
+        if ((grc = execute_pipeline(&cmds)) == 256 + OK_EXIT)
             return OK_EXIT;
-        }
-
-
     }
 
     return OK;

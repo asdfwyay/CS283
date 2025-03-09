@@ -117,3 +117,55 @@ EOF
     # Assertions
     [ "$status" -eq 0 ]
 }
+
+# Second command should run then shell should exit
+@test "Exit in pipe (first command)" {
+    run ./dsh <<EOF
+exit | echo "hi"
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    expected_output="hidsh3>cmdloopreturned-7"
+
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+}
+
+# No output since stdout of first command is passed to "exit," which itself fails as it is executed in a child process.
+@test "Exit in pipe (second command)" {
+    run ./dsh <<EOF
+echo "hi" | exit
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    expected_output="dsh3>dsh3>dsh3>cmdloopreturned0"
+
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+}
