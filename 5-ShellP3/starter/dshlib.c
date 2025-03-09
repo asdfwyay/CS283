@@ -105,10 +105,9 @@ int exec_local_cmd_loop()
             tok = strtok(NULL, PIPE_STRING);
         }
         *(cmd_buff + stridx) = '\0';
-        //printf("%s\n",cmd_buff);
 
         // check if there are commands in user input
-        if (cmd_buff[0] == '\0') {
+        if (cmd_buff[0] == '\0' || (cmd_buff[0] == '|' && cmd_buff[1] == '\0')) {
             printf(CMD_WARN_NO_CMD);
             continue;
         }
