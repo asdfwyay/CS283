@@ -264,19 +264,15 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
 
 int build_cmd_list(char *cmd_line, command_list_t *clist) {
     char *tok = strtok(cmd_line, PIPE_STRING);
-    int cmds = 1;
-    char *cmd = cmd_line;
-
-    // count number of commands in pipeline
-    while ((cmd = strchr(cmd, PIPE_CHAR))) cmds++;
-    if (cmds > CMD_MAX) {
-        printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
-        return ERR_TOO_MANY_COMMANDS;
-    }
+    int cmds = 0;
 
     // add commands to command list
-    cmds = 0;
     while (tok != NULL) {
+        if (cmds >= CMD_MAX) {
+            printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
+            return ERR_TOO_MANY_COMMANDS;
+        }
+
         alloc_cmd_buff(&clist->commands[cmds]);
         build_cmd_buff(tok,&clist->commands[cmds]);
 
