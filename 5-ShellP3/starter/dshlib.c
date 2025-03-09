@@ -377,6 +377,10 @@ int execute_pipeline(command_list_t *clist) {
     for (int i = 0; i < clist->num; i++)
         if (pipe(fds + 2*i) != 0) return ERR_EXEC_CMD;
 
+    pids[0] = fork();
+    crc = exec_pipe(clist, fds, pids, 0);
+
+    /*
     // execute each command in pipeline
     for (int i = 0; i < clist->num; i++) {
         // fork process
@@ -415,6 +419,46 @@ int execute_pipeline(command_list_t *clist) {
     waitpid(pids[clist->num-1], &crc, 0);
     if (WEXITSTATUS(crc) != 0)
         return WEXITSTATUS(crc);
+    */
+
+    return crc;
+}
+
+int exec_pipe(command_list_t *clist, int *fds, pid_t *pids, int i) {
+    int crc;
+
+    if (pids[i] == 0) {
+        int rc;
+
+        // duplicate file descriptors
+        if (i > 0)
+            dup2(fds[2*(i-1)], STDIN_FILENO);
+        if (i < clist->num - 1)
+            dup2(fds[2*i+1], STDOUT_FILENO);
+
+        // close all file descriptors
+        for (int j = 0; j < 2*clist->num; j++)
+            close(fds[j]);
+
+        // execute command
+        rc = exec_built_in_cmd(&clist->commands[i]);
+        if (rc == OK_EXIT)
+            exit(rc);
+        if (rc < 0)
+            exit(errno);
+    } else {
+        if (i < clist->num - 1) {
+            pids[i+1] = fork();
+            exec_pipe(clist, fds, pids, i+1);
+        }
+
+        for (int j = 0; j < 2*clist->num; j++)
+            close(fds[j]);
+
+        waitpid(pids[i], &crc, 0);
+        if (WEXITSTATUS(crc) != 0)
+            return WEXITSTATUS(crc);
+    }
 
     return OK;
 }

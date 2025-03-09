@@ -85,6 +85,7 @@ int exec_built_in_cmd(cmd_buff_t *cmd);
 int exec_local_cmd_loop();
 int exec_cmd(cmd_buff_t *cmd);
 int execute_pipeline(command_list_t *clist);
+int exec_pipe(command_list_t *clist, int *fds, pid_t *pids, int i);
 
 
 
