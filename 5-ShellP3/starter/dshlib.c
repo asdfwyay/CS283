@@ -124,6 +124,8 @@ int exec_local_cmd_loop()
             free(cmd);
             return OK_EXIT;
         }
+
+
     }
 
     return OK;
@@ -367,43 +369,52 @@ int exec_cmd(cmd_buff_t *cmd) {
 }
 
 int execute_pipeline(command_list_t *clist) {
-    pid_t *pids = (pid_t *)malloc(clist->num*sizeof(pid_t));
+    pid_t pids[clist->num];
+    int fds[2*clist->num];
     int crc;
 
-    if (!pids)
-        return ERR_MEMORY;
+    // create pipeline
+    for (int i = 0; i < clist->num; i++)
+        if (pipe(fds + 2*i) != 0) return ERR_EXEC_CMD;
 
+    // execute each command in pipeline
     for (int i = 0; i < clist->num; i++) {
-        int fds[2];
+        // fork process
         pids[i] = fork();
-
         if (pids[i] < 0) {
             return ERR_EXEC_CMD;
         }
 
-        pipe(fds);
-
         if (pids[i] == 0) {
             int rc;
 
-            dup2(fds[0], STDIN_FILENO);
-            close(fds[0]);
-            close(fds[1]);
+            // duplicate file descriptors
+            if (i > 0)
+                dup2(fds[2*(i-1)], STDIN_FILENO);
+            if (i < clist->num-1)
+                dup2(fds[2*i+1], STDOUT_FILENO);
 
+            // close all file descriptors
+            for (int j = 0; j < 2*clist->num; j++)
+                close(fds[j]);
+
+            // execute command
             rc = exec_built_in_cmd(&clist->commands[i]);
-            if (rc < 0) {
+            if (rc == OK_EXIT)
+                exit(rc);
+            if (rc < 0)
                 exit(errno);
-            }
-        } else {
-            dup2(STDOUT_FILENO, fds[1]);
-            close(fds[0]);
-            close(fds[1]);
-
-            waitpid(pids[i], &crc, 0);
-            if (WEXITSTATUS(crc) != 0)
-                return WEXITSTATUS(crc);
         }
     }
+
+    // parent process closes all fds
+    for (int j = 0; j < 2*clist->num; j++)
+        close(fds[j]);
+
+    // obtain status from last process in pipeline
+    waitpid(pids[clist->num-1], &crc, 0);
+    if (WEXITSTATUS(crc) != 0)
+        return WEXITSTATUS(crc);
 
     return OK;
 }
