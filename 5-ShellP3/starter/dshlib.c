@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include "dshlib.h"
 #include "dragon.h"
@@ -182,6 +183,12 @@ int alloc_cmd_buff(cmd_buff_t *cmd_buff) {
         return ERR_MEMORY;
     }
 
+    cmd_buff->in_mode = 0;
+    cmd_buff->out_mode = 0;
+    cmd_buff->append_mode = 0;
+    memset(cmd_buff->in_file, '\0', ARG_MAX);
+    memset(cmd_buff->out_file, '\0', ARG_MAX);
+
     return OK;
 }
 
@@ -232,25 +239,72 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff) {
     argv_pos[argc] = strlen(cmd_line);
 
     // allocate argv and populate with arguments
+    int j = 0;
+    int inc = 0;
+    int redir = 0;
+    char *buff_ptr;
+
+    cmd_buff->in_mode = 0;
+    cmd_buff->out_mode = 0;
+    cmd_buff->append_mode = 0;
+
+    memset(cmd_buff->in_file, '\0', ARG_MAX);
+    memset(cmd_buff->out_file, '\0', ARG_MAX);
+
     for (int i = 0; i < argc; i++) {
         // calculate buffer size
         argv_size = argv_pos[i+1] - argv_pos[i];
 
+        inc = 0;
+        switch (redir) {
+            case 1:
+                buff_ptr = cmd_buff->in_file;
+                cmd_buff->in_mode = 1;
+                redir = 0;
+                break;
+            case 2:
+                buff_ptr = cmd_buff->out_file;
+                cmd_buff->out_mode = 1;
+                redir = 0;
+                break;
+            default:
+                buff_ptr = NULL;
+                if (!strncmp(cmd_line + argv_pos[i] + 1, "<", argv_size - 1))
+                    redir = 1;
+                else if (!strncmp(cmd_line + argv_pos[i] + 1, ">", argv_size - 1))
+                    redir = 2;
+                else if (!strncmp(cmd_line + argv_pos[i] + 1, ">>", argv_size - 1)) {
+                    cmd_buff->append_mode = 1;
+                    redir = 2;
+                }
+                else {
+                    inc = 1;
+                    redir = 0;
+                }
+        }
+
         // allocate and zero argv buffer
-        cmd_buff->argv[i] = (char *)calloc(argv_size,sizeof(char));
-        if (cmd_buff->argv[i] == NULL)
-            return ERR_MEMORY;
+        if (buff_ptr == NULL && !redir) {
+            cmd_buff->argv[j] = (char *)calloc(argv_size,sizeof(char));
+            if (cmd_buff->argv[j] == NULL)
+                return ERR_MEMORY;
+            buff_ptr = cmd_buff->argv[j];
+        }
 
         // copy string to argv (without quotes)
-        if (*(cmd_line + argv_pos[i] + 1) == '"' && argv_size > 3)
-            strncpy(cmd_buff->argv[i], cmd_line + argv_pos[i] + 2, argv_size - 3);
-        else
-            strncpy(cmd_buff->argv[i], cmd_line + argv_pos[i] + 1, argv_size - 1);
+        if (!redir) {
+            if (*(cmd_line + argv_pos[i] + 1) == '"' && argv_size > 3)
+                strncpy(buff_ptr, cmd_line + argv_pos[i] + 2, argv_size - 3);
+            else
+                strncpy(buff_ptr, cmd_line + argv_pos[i] + 1, argv_size - 1);
+        }
+
+        if (inc) j++;
     }
-    cmd_buff->argv[argc] = NULL;
+    cmd_buff->argv[j] = NULL;
 
     // set argc
-    cmd_buff->argc = argc;
+    cmd_buff->argc = j;
 
     return OK;
 }
@@ -374,6 +428,13 @@ int execute_pipeline(command_list_t *clist) {
 
 int exec_pipe(command_list_t *clist, int *fds, pid_t *pids, int i) {
     int crc;
+    int in_fd, out_fd;
+
+    /*
+    printf("%d | %d | %s\n", i, clist->commands[i].out_mode, clist->commands[i].out_file);
+    for (int k = 0; k < clist->commands[i].argc+1; k++)
+        printf("argv[%d] = %s\n", k, clist->commands[i].argv[k]);
+    */
 
     if (pids[i] == 0) {
         int rc;
@@ -384,9 +445,36 @@ int exec_pipe(command_list_t *clist, int *fds, pid_t *pids, int i) {
         if (i < clist->num - 1)
             dup2(fds[2*i+1], STDOUT_FILENO);
 
-        // close all file descriptors
+        // close all pipes
         for (int j = 0; j < 2*clist->num; j++)
             close(fds[j]);
+
+        // input redirection
+        if (clist->commands[i].in_mode) {
+            in_fd = open(clist->commands[i].in_file, O_RDONLY);
+
+            if (in_fd < 0)
+                exit(ERR_CMD_ARGS_BAD);
+                
+            close(STDIN_FILENO);
+            dup(in_fd);
+            close(in_fd);
+        }
+
+        // output redirection
+        if (clist->commands[i].out_mode) {
+            if (clist->commands[i].append_mode)
+                out_fd = open(clist->commands[i].out_file, O_APPEND | O_CREAT | O_RDWR);
+            else
+                out_fd = creat(clist->commands[i].out_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+            if (out_fd < 0)
+                exit(ERR_CMD_ARGS_BAD);
+            
+            close(STDOUT_FILENO);
+            dup(out_fd);
+            close(out_fd);
+        }
 
         // execute command
         rc = exec_built_in_cmd(&clist->commands[i]);

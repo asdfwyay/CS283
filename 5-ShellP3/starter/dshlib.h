@@ -20,6 +20,13 @@ typedef struct cmd_buff
     int  argc;
     char *argv[CMD_ARGV_MAX];
     char *_cmd_buffer;
+
+    char in_file[ARG_MAX];
+    char out_file[ARG_MAX];
+
+    int in_mode;
+    int out_mode;
+    int append_mode;
 } cmd_buff_t;
 
 /* WIP - Move to next assignment 
@@ -42,6 +49,8 @@ typedef struct command_list{
 #define QUOTE_CHAR  '"'
 #define PIPE_CHAR   '|'
 #define PIPE_STRING "|"
+#define REDIR_IN_CHAR '<'
+#define REDIR_OUT_CHAR '>'
 
 #define SH_PROMPT "dsh3> "
 #define EXIT_CMD "exit"
