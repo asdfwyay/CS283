@@ -154,11 +154,11 @@ int exec_remote_cmd_loop(char *address, int port)
         }
         *(cmd_buff + stridx) = '\0';
 
-        // TODO send() over cli_socket
+        // send() over cli_socket
         if (send(cli_socket, cmd_buff, strlen(cmd_buff) + 1, 0) < 0)
             return ERR_RDSH_COMMUNICATION;
 
-        // TODO recv all the results
+        // recv all the results
         while ((io_size = recv(cli_socket, rsp_buff, RDSH_COMM_BUFF_SZ, 0)) > 0) {
             if (io_size < 0)
                 return ERR_RDSH_COMMUNICATION;
@@ -176,7 +176,7 @@ int exec_remote_cmd_loop(char *address, int port)
                 break;
         }
 
-        // TODO break on exit command
+        // break on exit command
         if (!strcmp(rsp_buff, "Bye!\n"))
             break;
     }
@@ -216,7 +216,7 @@ int start_client(char *server_ip, int port){
     addr.sin_addr.s_addr = inet_addr(server_ip);
     addr.sin_port = htons(port);
 
-    // TODO set up cli_socket
+    // set up cli_socket
     if ((cli_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
         return ERR_RDSH_COMMUNICATION;
 

@@ -128,12 +128,13 @@ int boot_server(char *ifaces, int port){
     addr.sin_addr.s_addr = inet_addr(ifaces);
     addr.sin_port = htons(port);
 
-    // TODO set up the socket - this is very similar to the demo code
+    // set up the socket - this is very similar to the demo code
     if ((svr_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
         return ERR_RDSH_COMMUNICATION;
 
     setsockopt(svr_socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 
+    // bind address to socket
     if (bind(svr_socket, (struct sockaddr *) &addr, sizeof(addr)) < 0)
         return ERR_RDSH_COMMUNICATION;
 
@@ -200,7 +201,7 @@ int process_cli_requests(int svr_socket){
     socklen_t addr_len;   
 
     while(1){
-        // TODO use the accept syscall to create cli_socket 
+        // accept syscall to create cli_socket 
         // and then exec_client_requests(cli_socket)
         if ((cli_socket = accept(svr_socket, (struct sockaddr *) &addr, &addr_len)) < 0)
             return ERR_RDSH_COMMUNICATION;
@@ -260,13 +261,14 @@ int exec_client_requests(int cli_socket) {
     int cmd_rc;
     char *io_buff;
 
+    // allocate I/O buffer
     io_buff = malloc(RDSH_COMM_BUFF_SZ*sizeof(char));
     if (io_buff == NULL){
         return ERR_RDSH_SERVER;
     }
 
     while(1) {
-        // TODO use recv() syscall to get input
+        // use recv() syscall to get input
         while ((io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0)) > 0) {
             if (io_size < 0)
                 return ERR_RDSH_COMMUNICATION;
@@ -282,13 +284,13 @@ int exec_client_requests(int cli_socket) {
                 break;
         }
 
-        // TODO build up a cmd_list
+        // build up a cmd_list
         build_cmd_list(io_buff, &cmd_list);
 
-        // TODO rsh_execute_pipeline to run your cmd_list
+        // rsh_execute_pipeline to run your cmd_list
         cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
 
-        // TODO send appropriate respones with send_message_string
+        // send appropriate respones with send_message_string
         // - error constants for failures
         // - buffer contents from execute commands
         //  - etc.
@@ -301,9 +303,10 @@ int exec_client_requests(int cli_socket) {
             default:
         }
 
-        // TODO send_message_eof when done
+        // send_message_eof when done
         send_message_eof(cli_socket);
 
+        // return to process_cli_requests() upon receiving exit or stop-server commands
         if (cmd_rc == EXIT_SC) {
             return OK;
         } else if (cmd_rc == STOP_SERVER_SC) {
@@ -425,15 +428,13 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     }
 
     for (int i = 0; i < clist->num; i++) {
-        // TODO this is basically the same as the piped fork/exec assignment, except for where you connect the begin and end of the pipeline (hint: cli_sock)
-
-        // TODO HINT you can dup2(cli_sock with STDIN_FILENO, STDOUT_FILENO, etc.)
-
+        // fork
         pids[i] = fork();
         if (pids[i] < 0) {
             return ERR_EXEC_CMD;
         }
 
+        // Child process
         if (pids[i] == 0) {
             // dup STDIN
             if (i == 0)
@@ -454,6 +455,7 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
                 close(pipes[i][1]);
             }
 
+            // Execute command and exit based on program state
             bi_cmd = rsh_built_in_cmd(&clist->commands[i]);
             switch (bi_cmd) {
                 case BI_CMD_DRAGON:
