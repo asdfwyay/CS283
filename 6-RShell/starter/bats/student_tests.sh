@@ -152,7 +152,7 @@ EOF
     stripped_output=$(echo "$output" | tr -d '[:space:]')
 
     # Expected output with all whitespace removed for easier matching
-    expected_output="socketclientmode:addr:127.0.0.1:5678dsh4>socketservermode:addr:0.0.0.0:5678->Single-ThreadedModeBye!dsh4>cmdloopreturned0"
+    expected_output="socketclientmode:addr:127.0.0.1:5678dsh4>socketservermode:addr:0.0.0.0:5678->Single-ThreadedModeBye!cmdloopreturned0"
 
     # These echo commands will help with debugging and will only print
     #if the test fails
