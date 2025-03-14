@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <fcntl.h>
+#include <errno.h>
 
 //INCLUDES for extra credit
 //#include <signal.h>
@@ -17,6 +18,8 @@
 #include "dshlib.h"
 #include "rshlib.h"
 #include "dragon.h"
+
+int last_rc = 0;
 
 /*
  * start_server(ifaces, port, is_threaded)
@@ -251,11 +254,10 @@ int process_cli_requests(int svr_socket){
  *                or receive errors. 
  */
 int exec_client_requests(int cli_socket) {
-    int io_size;
+    ssize_t io_size;
     command_list_t cmd_list;
-    int rc;
+    //int rc;
     int cmd_rc;
-    int last_rc = 0;
     char *io_buff;
 
     io_buff = malloc(RDSH_COMM_BUFF_SZ*sizeof(char));
@@ -264,8 +266,6 @@ int exec_client_requests(int cli_socket) {
     }
 
     while(1) {
-        memset(io_buff, 0, RDSH_COMM_BUFF_SZ);
-
         // TODO use recv() syscall to get input
         while ((io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0)) > 0) {
             if (io_size < 0)
@@ -276,6 +276,7 @@ int exec_client_requests(int cli_socket) {
 
             int is_last_chunk = ((char)io_buff[io_size-1] == '\0') ? 1 : 0;
 
+            //printf("%ld\n", io_size);
             //printf("%.*s", (int)io_size, io_buff);
             if (is_last_chunk)
                 break;
@@ -295,10 +296,10 @@ int exec_client_requests(int cli_socket) {
         switch (cmd_rc){
             case EXIT_SC:
             case STOP_SERVER_SC:
-                send_message_string(cli_socket, EXIT_CMD);
+                send_message_string(cli_socket, "Bye!\n");
+                break;
             default:
         }
-        
 
         // TODO send_message_eof when done
         send_message_eof(cli_socket);
@@ -405,12 +406,15 @@ int send_message_string(int cli_socket, char *buff){
  *                  macro that we discussed during our fork/exec lecture to
  *                  get this value. 
  */
+
 int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     int pipes[clist->num - 1][2];  // Array of pipes
     pid_t pids[clist->num];
     int  pids_st[clist->num];         // Array to store process IDs
     Built_In_Cmds bi_cmd;
     int exit_code;
+
+    //memset(pids_st, 0, clist->num*sizeof(int));
 
     // Create all necessary pipes
     for (int i = 0; i < clist->num - 1; i++) {
@@ -431,8 +435,6 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
         }
 
         if (pids[i] == 0) {
-            
-
             // dup STDIN
             if (i == 0)
                 dup2(cli_sock, STDIN_FILENO);
@@ -453,19 +455,27 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
             }
 
             bi_cmd = rsh_built_in_cmd(&clist->commands[i]);
-            if (bi_cmd == BI_NOT_BI) {
-                exit_code = execvp(clist->commands[i].argv[0], clist->commands[i].argv);
-                exit(exit_code);
-            } else if (bi_cmd == BI_CMD_EXIT) {
-                exit(EXIT_SC);
-            } else if (bi_cmd == BI_CMD_STOP_SVR) {
-                exit(STOP_SERVER_SC);
-            } else if (bi_cmd == BI_CMD_CD){
-                if (chdir(clist->commands[i].argv[1]) < 0)
-                    exit(EXIT_FAILURE);
-                exit(EXIT_SUCCESS);
-            } else {
-                exit(EXIT_SUCCESS);
+            switch (bi_cmd) {
+                case BI_CMD_DRAGON:
+                    print_dragon();
+                    exit(EXIT_SUCCESS);
+                case BI_CMD_EXIT:
+                    exit(EXIT_SC);
+                case BI_CMD_STOP_SVR:
+                    exit(STOP_SERVER_SC);
+                case BI_CMD_RC:
+                    if (printf("%d\n", last_rc) < 0)
+                        exit(EXIT_FAILURE);
+                    else
+                        exit(EXIT_SUCCESS);
+                case BI_CMD_CD:
+                    if (chdir(clist->commands[i].argv[1]) < 0)
+                        exit(EXIT_FAILURE);
+                    else
+                        exit(EXIT_SUCCESS);
+                default:
+                    exit_code = execvp(clist->commands[i].argv[0], clist->commands[i].argv);
+                    exit(exit_code);
             }
         }
 
@@ -486,7 +496,7 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     //use this as the return value
     exit_code = WEXITSTATUS(pids_st[clist->num - 1]);
     for (int i = 0; i < clist->num; i++) {
-        //if any commands in the pipeline are EXIT_SC or EXIT_C
+        //if any commands in the pipeline are EXIT_SC or STOP_SERVER_SC
         //return that to enable the caller to react
         if (WEXITSTATUS(pids_st[i]) == STOP_SERVER_SC) {
             exit_code = STOP_SERVER_SC;
@@ -500,6 +510,7 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     }
     return exit_code;
 }
+
 
 /**************   OPTIONAL STUFF  ***************/
 /****
@@ -589,7 +600,6 @@ Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd)
     switch (ctype)
     {
     case BI_CMD_DRAGON:
-        print_dragon();
         return BI_EXECUTED;
     case BI_CMD_EXIT:
         return BI_CMD_EXIT;

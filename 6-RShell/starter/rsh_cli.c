@@ -96,16 +96,25 @@ int exec_remote_cmd_loop(char *address, int port)
     char *rsp_buff;
     int cli_socket;
     ssize_t io_size;
-    int is_eof;
+    //int is_eof;
+
+    char *cmd;
+    char *tok;
+    int stridx = 0;
 
     // TODO set up cmd and response buffs
-    cmd_buff = (char *)malloc(RDSH_COMM_BUFF_SZ*sizeof(char));
+    cmd_buff = (char *)malloc(SH_CMD_MAX*sizeof(char));
     if (cmd_buff == NULL)
         return ERR_MEMORY;
 
     rsp_buff = (char *)malloc(RDSH_COMM_BUFF_SZ*sizeof(char));
     if (rsp_buff == NULL)
         return ERR_MEMORY;
+
+    cmd = (char *)malloc(SH_CMD_MAX*sizeof(char));
+    if (cmd == NULL) {
+        return ERR_MEMORY;
+    }
 
     cli_socket = start_client(address,port);
     if (cli_socket < 0){
@@ -125,6 +134,26 @@ int exec_remote_cmd_loop(char *address, int port)
         }
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 
+        // format command
+        tok = strtok(cmd_buff, PIPE_STRING);
+        stridx = 0;
+        while (tok != NULL) {
+            // format token
+            strcpy(cmd,tok);
+            cmd = fmt_cmd(cmd);
+
+            // add token to command buffer
+            strcpy(cmd_buff + stridx,cmd);
+
+            // add pipe character and update string pointer
+            *(cmd_buff + stridx + strlen(cmd)) = PIPE_CHAR;
+            stridx += strlen(cmd) + 1;
+
+            // move to next token
+            tok = strtok(NULL, PIPE_STRING);
+        }
+        *(cmd_buff + stridx) = '\0';
+
         // TODO send() over cli_socket
         if (send(cli_socket, cmd_buff, strlen(cmd_buff) + 1, 0) < 0)
             return ERR_RDSH_COMMUNICATION;
@@ -141,13 +170,14 @@ int exec_remote_cmd_loop(char *address, int port)
             if (is_last_chunk)
                 rsp_buff[io_size-1] = '\0';
 
+            //printf("%ld\n", io_size);
             printf("%.*s", (int)io_size, rsp_buff);
             if (is_last_chunk)
                 break;
         }
 
         // TODO break on exit command
-        if (!strcmp(rsp_buff, EXIT_CMD))
+        if (!strcmp(rsp_buff, "Bye!\n"))
             break;
     }
 

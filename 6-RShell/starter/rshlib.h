@@ -66,6 +66,7 @@ int send_message_string(int cli_socket, char *buff);
 int process_cli_requests(int svr_socket);
 int exec_client_requests(int cli_socket);
 int rsh_execute_pipeline(int socket_fd, command_list_t *clist);
+//int rsh_exec_pipe(int cli_sock, command_list_t *clist, int *fds, pid_t *pids, int i);
 
 Built_In_Cmds rsh_match_command(const char *input);
 Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd);
