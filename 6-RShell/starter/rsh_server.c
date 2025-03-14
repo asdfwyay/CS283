@@ -16,7 +16,7 @@
 
 #include "dshlib.h"
 #include "rshlib.h"
-
+#include "dragon.h"
 
 /*
  * start_server(ifaces, port, is_threaded)
@@ -55,15 +55,11 @@ int start_server(char *ifaces, int port, int is_threaded){
     //       to keep track of is_threaded to handle this feature
     //
 
-    printf("Booting Server\n");
-
     svr_socket = boot_server(ifaces, port);
     if (svr_socket < 0){
         int err_code = svr_socket;  //server socket will carry error code
         return err_code;
     }
-
-    printf("Processing Requests\n");
 
     rc = process_cli_requests(svr_socket);
 
@@ -206,7 +202,7 @@ int process_cli_requests(int svr_socket){
         if ((cli_socket = accept(svr_socket, (struct sockaddr *) &addr, &addr_len)) < 0)
             return ERR_RDSH_COMMUNICATION;
         if ((rc = exec_client_requests(cli_socket)) != OK)
-            return rc;
+            break;
     }
 
     stop_server(cli_socket);
@@ -259,18 +255,31 @@ int exec_client_requests(int cli_socket) {
     command_list_t cmd_list;
     int rc;
     int cmd_rc;
-    int last_rc;
+    int last_rc = 0;
     char *io_buff;
 
-    io_buff = malloc(RDSH_COMM_BUFF_SZ);
+    io_buff = malloc(RDSH_COMM_BUFF_SZ*sizeof(char));
     if (io_buff == NULL){
         return ERR_RDSH_SERVER;
     }
 
     while(1) {
+        memset(io_buff, 0, RDSH_COMM_BUFF_SZ);
+
         // TODO use recv() syscall to get input
-        if ((io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0)) < 0)
-            return ERR_RDSH_COMMUNICATION;
+        while ((io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0)) > 0) {
+            if (io_size < 0)
+                return ERR_RDSH_COMMUNICATION;
+
+            if (io_size == 0)
+                break;
+
+            int is_last_chunk = ((char)io_buff[io_size-1] == '\0') ? 1 : 0;
+
+            //printf("%.*s", (int)io_size, io_buff);
+            if (is_last_chunk)
+                break;
+        }
 
         // TODO build up a cmd_list
         build_cmd_list(io_buff, &cmd_list);
@@ -282,12 +291,28 @@ int exec_client_requests(int cli_socket) {
         // - error constants for failures
         // - buffer contents from execute commands
         //  - etc.
+        //printf("%d\n", cmd_rc);
+        switch (cmd_rc){
+            case EXIT_SC:
+            case STOP_SERVER_SC:
+                send_message_string(cli_socket, EXIT_CMD);
+            default:
+        }
+        
 
         // TODO send_message_eof when done
         send_message_eof(cli_socket);
+
+        if (cmd_rc == EXIT_SC) {
+            return OK;
+        } else if (cmd_rc == STOP_SERVER_SC) {
+            return OK_EXIT;
+        }
+
+        last_rc = cmd_rc;
     }
 
-    return WARN_RDSH_NOT_IMPL;
+    return OK;
 }
 
 /*
@@ -400,6 +425,11 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
 
         // TODO HINT you can dup2(cli_sock with STDIN_FILENO, STDOUT_FILENO, etc.)
 
+        pids[i] = fork();
+        if (pids[i] < 0) {
+            return ERR_EXEC_CMD;
+        }
+
         if (pids[i] == 0) {
             
 
@@ -410,9 +440,10 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
                 dup2(pipes[i-1][0], STDIN_FILENO);
 
             // dup STDOUT
-            if (i == clist->num - 1)
+            if (i == clist->num - 1) {
                 dup2(cli_sock, STDOUT_FILENO);
-            else
+                dup2(cli_sock, STDERR_FILENO);
+            } else
                 dup2(pipes[i][1], STDOUT_FILENO);
 
             // Child process: close all pipe ends
@@ -421,10 +452,21 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
                 close(pipes[i][1]);
             }
 
-            if ((bi_cmd = rsh_built_in_cmd(&clist->commands[i])) == BI_NOT_BI)
+            bi_cmd = rsh_built_in_cmd(&clist->commands[i]);
+            if (bi_cmd == BI_NOT_BI) {
                 exit_code = execvp(clist->commands[i].argv[0], clist->commands[i].argv);
-
-            exit(exit_code);
+                exit(exit_code);
+            } else if (bi_cmd == BI_CMD_EXIT) {
+                exit(EXIT_SC);
+            } else if (bi_cmd == BI_CMD_STOP_SVR) {
+                exit(STOP_SERVER_SC);
+            } else if (bi_cmd == BI_CMD_CD){
+                if (chdir(clist->commands[i].argv[1]) < 0)
+                    exit(EXIT_FAILURE);
+                exit(EXIT_SUCCESS);
+            } else {
+                exit(EXIT_SUCCESS);
+            }
         }
 
     }
@@ -444,10 +486,17 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     //use this as the return value
     exit_code = WEXITSTATUS(pids_st[clist->num - 1]);
     for (int i = 0; i < clist->num; i++) {
-        //if any commands in the pipeline are EXIT_SC
+        //if any commands in the pipeline are EXIT_SC or EXIT_C
         //return that to enable the caller to react
-        if (WEXITSTATUS(pids_st[i]) == EXIT_SC)
+        if (WEXITSTATUS(pids_st[i]) == STOP_SERVER_SC) {
+            exit_code = STOP_SERVER_SC;
+            break;
+        }
+
+        if (WEXITSTATUS(pids_st[i]) == EXIT_SC) {
             exit_code = EXIT_SC;
+            break;
+        }
     }
     return exit_code;
 }
@@ -539,9 +588,9 @@ Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd)
 
     switch (ctype)
     {
-    // case BI_CMD_DRAGON:
-    //     print_dragon();
-    //     return BI_EXECUTED;
+    case BI_CMD_DRAGON:
+        print_dragon();
+        return BI_EXECUTED;
     case BI_CMD_EXIT:
         return BI_CMD_EXIT;
     case BI_CMD_STOP_SVR:
@@ -549,7 +598,6 @@ Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd)
     case BI_CMD_RC:
         return BI_CMD_RC;
     case BI_CMD_CD:
-        chdir(cmd->argv[1]);
         return BI_EXECUTED;
     default:
         return BI_NOT_BI;

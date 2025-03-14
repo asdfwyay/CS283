@@ -130,12 +130,25 @@ int exec_remote_cmd_loop(char *address, int port)
             return ERR_RDSH_COMMUNICATION;
 
         // TODO recv all the results
-        if (recv(cli_socket, rsp_buff, RDSH_COMM_BUFF_SZ, 0) < 0)
-            return ERR_RDSH_COMMUNICATION;
+        while ((io_size = recv(cli_socket, rsp_buff, RDSH_COMM_BUFF_SZ, 0)) > 0) {
+            if (io_size < 0)
+                return ERR_RDSH_COMMUNICATION;
 
-        printf("%s\n", rsp_buff);
+            if (io_size == 0)
+                break;
+
+            int is_last_chunk = ((char)rsp_buff[io_size-1] == RDSH_EOF_CHAR) ? 1 : 0;
+            if (is_last_chunk)
+                rsp_buff[io_size-1] = '\0';
+
+            printf("%.*s", (int)io_size, rsp_buff);
+            if (is_last_chunk)
+                break;
+        }
 
         // TODO break on exit command
+        if (!strcmp(rsp_buff, EXIT_CMD))
+            break;
     }
 
     return client_cleanup(cli_socket, cmd_buff, rsp_buff, OK);
